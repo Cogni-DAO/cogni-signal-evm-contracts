@@ -1,66 +1,41 @@
-## Foundry
+# cogni-signal-evm-contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Minimal EVM contracts that emit on-chain events to authorize GitHub admin actions via the cogni-admin app.
 
-Foundry consists of:
+## Overview
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+The `CogniSignal` contract enables DAOs to execute governance decisions on GitHub repositories through deterministic on-chain events. Only the DAO can call `signal()`, which emits `CogniAction` events consumed by off-chain listeners.
 
-## Documentation
+## Core Contract
 
-https://book.getfoundry.sh/
+**`CogniSignal.sol`** - Emits `CogniAction` events with:
+- `dao` (indexed) - DAO address that executed the signal
+- `chainId` (indexed) - Chain where the signal was emitted  
+- `repo` - Target GitHub repository
+- `action` - Action type (e.g., "PR_APPROVE")
+- `target` - Branch or target reference
+- `pr` - Pull request number
+- `commit` - Git commit hash (32 bytes)
+- `extra` - ABI-encoded `(nonce, deadline, paramsJson)`
+- `executor` (indexed) - Address that called the function
 
-## Usage
+## Actions (v1)
 
-### Build
+- `PR_APPROVE` - Approve pull requests
+- Future: `MERGE`, `LABEL`, `REVERT`
 
-```shell
-$ forge build
+## Security
+
+- Only the DAO address (set at deployment) can call `signal()`
+- No state changes beyond event emission
+- Off-chain verifiers handle nonce/deadline validation and replay protection
+
+## Development
+
+```bash
+forge test        # Run tests
+forge build       # Build contracts  
+forge fmt         # Format code
 ```
 
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+See `AGENTS.md` for detailed technical specifications.
