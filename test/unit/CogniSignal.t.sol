@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {CogniSignal} from "../src/CogniSignal.sol";
+import {CogniSignal} from "../../src/CogniSignal.sol";
 
 contract CogniSignalTest is Test {
     CogniSignal public signal;

@@ -39,3 +39,5 @@ forge fmt         # Format code
 ```
 
 See `AGENTS.md` for detailed technical specifications.
+
+forge script script/Deploy.s.sol:Deploy --rpc-url testnet --broadcast --verify --etherscan-api-key <key optional>
