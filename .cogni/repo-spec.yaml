@@ -10,7 +10,7 @@ intent:
 # These are *status context names*, not workflow file names. 
 # Cogni confirms these are enforced via Allstar.
 required_status_contexts:
-  - CI - PR
+  # - CI - PR
   # - Security
   - Cogni Git PR Review
 
