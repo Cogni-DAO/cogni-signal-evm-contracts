@@ -1,7 +1,10 @@
 # AGENTS.md — cogni-signal-evm-contracts
 
 ## Purpose
-Emit deterministic on-chain events that authorize specific admin actions in GitHub via the cogni-admin app. Keep governance thin and auditable.
+Emit deterministic on-chain events that authorize specific admin actions in GitHub via the cogni-git-admin app. Keep governance thin and auditable.
+
+See `COGNI-GIT-ADMIN-INTEGRATION.md` for integration details.
+
 
 ## Scope
 - Chain: EVM only.
