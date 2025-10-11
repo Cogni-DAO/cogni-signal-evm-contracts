@@ -10,8 +10,6 @@ On-chain governance signals for GitHub operations via [cogni-git-admin](https://
 
 ## CogniAction Event
 
-<!-- Literal 1st Pass at a schema. Will evolve -->
-
 ```solidity
 event CogniAction(
     address indexed dao,      // DAO address (0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5)
@@ -59,55 +57,24 @@ COGNI_ALLOWED_DAO=0xa38d03ea38c45c1b6a37472d8df78a47c1a31eb5  # Lowercase
 }
 ```
 
-## Supported Actions (v1)
-- `PR_APPROVE` - Approve pull requests
-
-## Event Filtering Examples
-
-### Filter by Event Signature
-```javascript
-// Topics array: [signature, dao, chainId, executor]
-const topics = [
-  "0xfd9a8ea95d56c7bd709823c6589c50386a2e5833892ef0e93c7bf63fee30bde1", // CogniAction signature
-  "0x000000000000000000000000a38d03ea38c45c1b6a37472d8df78a47c1a31eb5", // DAO address
-  null, // Any chain ID
-  null  // Any executor
-];
-```
-
-### Filter by Specific Repository (requires parsing data)
-Since `repo` is not indexed, you'll need to:
-1. Listen to all CogniAction events
-2. Decode the event data
-3. Filter by repo name in your application logic
-
 ## Webhook Setup
-Monitor contract address `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1` on Sepolia for `CogniAction` events using your preferred method:
 
-### Alchemy Webhooks
+Configure Alchemy webhooks to monitor the contract:
+
 ```json
 {
-  "webhook_type": "ADDRESS_ACTIVITY",
+  "webhook_type": "ADDRESS_ACTIVITY", 
   "addresses": ["0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1"],
   "network": "SEPOLIA"
 }
 ```
 
-### Web3 Event Listener Example
-```javascript
-const web3 = new Web3(SEPOLIA_RPC_URL);
-const contract = new web3.eth.Contract(ABI, "0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1");
-
-contract.events.CogniAction({
-  fromBlock: 'latest'
-}, (error, event) => {
-  if (error) console.error(error);
-  console.log('New CogniAction:', event);
-});
+Point webhook URL to your cogni-git-admin instance:
+```
+https://your-domain.com/api/v1/webhooks/onchain/cogni-signal
 ```
 
-## Security Notes
-- Only the DAO address (`0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5`) can emit these events
-- The `executor` parameter will always equal the `dao` parameter due to access controls
-- Contract is verified on Etherscan for full transparency
-- All event data should be validated before processing in your application
+## Security
+- Only DAO address can call `signal()` (enforced by `onlyDAO` modifier)
+- Contract verified on Etherscan for transparency  
+- cogni-git-admin validates chain ID and DAO address on every event

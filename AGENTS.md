@@ -1,47 +1,63 @@
-# AGENTS.md — cogni-signal-evm-contracts
+# CogniSignal Contract System
 
-## Purpose
-Emit deterministic on-chain events that authorize specific admin actions in GitHub via the cogni-git-admin app. Keep governance thin and auditable.
+## Overview
+Minimal on-chain governance events for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
-See `COGNI-GIT-ADMIN-INTEGRATION.md` for integration details.
+## Status: MVP Complete ✅
+- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia  
+- **Address:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1`
+- **Tests:** Unit + E2E tests passing (`forge test`)
+- **Integration:** Working with cogni-git-admin via Alchemy webhooks
 
+## Architecture
+```
+DAO → signal() → CogniAction event → Alchemy webhook → cogni-git-admin → GitHub API
+```
 
-## Scope
-- Chain: EVM only.
-- Contract: minimal `CogniSignal` callable only by the DAO (or OSx permissioned later).
-- Output: `CogniAction` event with a stable schema.
-- Out of scope: Solana, treasury, generic plugins, UI.
+## Contract Interface
+```solidity
+function signal(
+    string calldata repo,     // "owner/repo"
+    string calldata action,   // "PR_APPROVE"  
+    string calldata target,   // "pull_request"
+    uint256 pr,               // PR number
+    bytes32 commit,           // Git commit hash
+    bytes calldata extra      // ABI-encoded: (nonce, deadline, paramsJson)
+) external onlyDAO;
+```
 
-## Core Actions (v1)
-- `PR_APPROVE`
-- `MERGE` (later)
-- `LABEL` (later)
-- `REVERT` (later)
+## Events
+```solidity
+event CogniAction(
+    address indexed dao,      // Fixed DAO address
+    uint256 indexed chainId,  // Auto-generated
+    string repo,              // Target repository
+    string action,            // Action type
+    string target,            // Action target
+    uint256 pr,               // PR number
+    bytes32 commit,           // Git commit
+    bytes extra,              // Additional data
+    address indexed executor  // Caller (same as DAO)
+);
+```
 
-All via: signal(repo, action, target, pr, commit, extra)
+## Actions (MVP)
+- `PR_APPROVE` - Approve pull requests
 
-Event fields: dao, chainId, repo, action, target, pr, commit, extra(bytes: abi.encode(nonce, deadline, paramsJson))
+## Security
+- `onlyDAO` modifier restricts access
+- Event-only contract (no state changes)
+- Verified on Etherscan for transparency
 
+## Testing
+```bash
+forge test           # All tests (unit + e2e)
+forge test --match-path test/unit/    # Unit tests only
+forge test --match-path test/e2e/     # E2E tests only  
+```
 
-## Interfaces
-- **Input:** DAO executes `signal(...)`.
-- **Output:** `CogniAction` event consumed by cogni-admin.
-- **Mapping:** `(dao, contract, chainId) -> allowed repos` kept off-chain for MVP.
-
-**Note:** Off Chain webhook listeners (via Alchemy, Quicknode, etc) must be set up to listen for this signal execution.
-
-## Security Invariants
-- Only the DAO may call `signal()`.
-- Off-chain verifier enforces `(dao, contract, chainId, repo, nonce, deadline, commit)` and replay protection.
-- GitHub App holds required admin permissions.
-
-## Repo Rules
-- Minimal Solidity. No stateful side effects beyond events.
-- Tests cover auth and event payload fidelity.
-- Scripts for deploy; optional OSx install/grant scripts later.
-
-## Roadmap
-1. v1: `onlyDAO` + events + off-chain nonce checks.
-2. v1.1: OSx permission gates; on-chain repo allowlist.
-3. v1.2: add `MERGE`, `LABEL`, `REVERT`.
-4. v2: schema version bump `cogni.action@2` if fields change.
+## Development Rules
+- Keep minimal - events only, no state
+- 100% test coverage for access control
+- All events must be validated in tests
+- E2E tests use real DAO address with forks
