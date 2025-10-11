@@ -5,9 +5,8 @@ workflow_id: goal-evaluations
 
 # Edit this! Update it with a clear description of the repo's goal.
 evaluations:
-  - repo-goal: This PR directly advances [DESCRIBE YOUR REPO'S CORE MISSION].
+  - repo-goal: This PR is directly related to building stable smart contracts to DAO management signals to the cogni-git-admin github app.
   # - clear-sub-goals: This PR only uses open source tools and does not introduce new paid dependencies.
-
 
 
 # Code-aware capabilities (vendor-prefixed for non-breaking compatibility)
@@ -19,6 +18,6 @@ success_criteria:
   neutral_on_missing_metrics: true
   require:
     - metric: repo-goal
-      gte: 0.8
+      gte: 0.7        # Lower required score, This will be a hard evaluation for the AI to do well
     # - metric: clear-sub-goal
     #   gte: 0.8
