@@ -49,6 +49,22 @@ event CogniAction(
 - Event-only contract (no state changes)
 - Verified on Etherscan for transparency
 
+## Development Setup
+
+**Quick Start:** Deploy complete development stack (ERC20 → DAO → CogniSignal)
+```bash
+# Add to .env file:
+DEV_WALLET_PRIVATE_KEY=0x...  # Funded Sepolia wallet
+RPC_URL=https://eth-sepolia... # Sepolia RPC
+
+# Deploy complete stack
+make dao-setup
+```
+
+**Documentation:**
+- `script/AGENTS.md` - Deployment scripts and setup guides
+- `script/gov_providers/AGENTS.md` - Governance provider integration best practices
+
 ## Testing
 ```bash
 forge test           # All tests (unit + e2e)

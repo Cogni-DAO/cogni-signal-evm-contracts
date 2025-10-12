@@ -12,9 +12,8 @@ Modular governance provider system enabling CogniSignal to work with any DAO fra
 
 ## Provider Selection
 
-- **AUTO** (default): Aragon first, SimpleDAO fallback
-- **ARAGON**: Force Aragon OSx deployment
-- **SIMPLE**: Force SimpleDAO deployment
+- **ARAGON** (default): Aragon OSx deployment
+- **SIMPLE**: SimpleDAO deployment
 
 Configure via `GOV_PROVIDER` environment variable.
 

@@ -41,7 +41,7 @@ contract SetupDevChain is Script {
         address deployer = vm.addr(deployerPrivateKey);
         
         // Configuration
-        string memory govProviderEnv = vm.envOr("GOV_PROVIDER", string("auto"));
+        string memory govProviderEnv = vm.envOr("GOV_PROVIDER", string("aragon"));
         string memory tokenName = vm.envOr("TOKEN_NAME", string("Cogni Governance Token"));
         string memory tokenSymbol = vm.envOr("TOKEN_SYMBOL", string("CGT"));
         uint256 tokenSupply = vm.envOr("TOKEN_SUPPLY", uint256(1000000 * 10**18)); // 1M tokens

@@ -20,20 +20,21 @@ The deployment uses a provider pattern (`script/gov_providers/`) that enables:
 - **SimpleDaoProvider** - Lightweight fallback for development environments
 
 Provider selection logic:
-1. `GOV_PROVIDER=auto` (default) - Tries Aragon OSx first, falls back to SimpleDAO if unavailable
-2. `GOV_PROVIDER=aragon` - Forces Aragon OSx (fails if unavailable on network)
-3. `GOV_PROVIDER=simple` - Forces SimpleDAO deployment
+1. `GOV_PROVIDER=aragon` (default) - Aragon OSx deployment
+2. `GOV_PROVIDER=simple` - Forces SimpleDAO deployment
 
 ### Usage
 ```bash
-# Set environment
-export DEV_WALLET_PRIVATE_KEY=0x...
-export RPC_URL=https://eth-sepolia...
-export GOV_PROVIDER=auto  # Optional: auto|aragon|simple
+# Set environment (add to .env file)
+DEV_WALLET_PRIVATE_KEY=0x...
+RPC_URL=https://eth-sepolia...
+GOV_PROVIDER=aragon  # Optional: aragon|simple
 
 # Deploy complete stack
-forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $RPC_URL --broadcast
+make dao-setup
 ```
+
+**Prerequisites:** Funded Sepolia wallet (~0.05 ETH) - Get from sepoliafaucet.com or faucets.chain.link/sepolia
 
 ### Environment Variables
 **Required:**
@@ -41,7 +42,7 @@ forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $RPC_URL --broad
 - `RPC_URL` - Network RPC endpoint
 
 **Optional:**
-- `GOV_PROVIDER` - Governance provider selection (default: "auto")
+- `GOV_PROVIDER` - Governance provider selection (default: "aragon")
 - `TOKEN_NAME` - Token name (default: "Cogni Governance Token")
 - `TOKEN_SYMBOL` - Token symbol (default: "CGT")  
 - `TOKEN_SUPPLY` - Initial supply (default: 1M tokens)
@@ -58,6 +59,21 @@ Key output variables:
 - `COGNI_SIGNAL_CONTRACT` - CogniSignal contract address
 
 The saved `.env.{TOKEN_SYMBOL}` file contains all deployment information for E2E testing and future reference.
+
+### Troubleshooting
+```bash
+# Check wallet balance (get address from private key)
+cast wallet address --private-key $DEV_WALLET_PRIVATE_KEY
+cast balance $(cast wallet address --private-key $DEV_WALLET_PRIVATE_KEY) --rpc-url $RPC_URL
+
+# Test RPC connectivity  
+cast block latest --rpc-url $RPC_URL
+
+# If deployment fails, check .env variables are loaded
+make dao-setup  # Uses Makefile which auto-loads .env
+```
+
+**Note:** For governance provider integration best practices, see `script/gov_providers/AGENTS.md`.
 
 ---
 
