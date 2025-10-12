@@ -2,102 +2,11 @@
 pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Deploy} from "./Deploy.s.sol";
 import {CogniSignal} from "../src/CogniSignal.sol";
+import {IGovProvider} from "./gov_providers/IGovProvider.sol";
+import {GovProviderFactory} from "./gov_providers/GovProviderFactory.sol";
 
-/**
- * @title Simple ERC20 Token for DAO governance
- * @dev Mints initial supply to deployer for testing purposes
- */
-contract CogniToken is ERC20 {
-    uint8 private _decimals;
-    
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals_,
-        uint256 initialSupply,
-        address recipient
-    ) ERC20(name, symbol) {
-        _decimals = decimals_;
-        _mint(recipient, initialSupply);
-    }
-    
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
-    }
-}
-
-/**
- * @title Simple DAO for CogniSignal testing
- * @dev Minimal DAO implementation with basic governance and execution
- */
-contract SimpleDAO {
-    address public owner;
-    ERC20 public token;
-    
-    struct Action {
-        address to;
-        uint256 value;
-        bytes data;
-    }
-    
-    event ProposalExecuted(uint256 indexed proposalId, bool success);
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-    
-    modifier onlyOwner() {
-        require(msg.sender == owner, "SimpleDAO: caller is not owner");
-        _;
-    }
-    
-    constructor(address _token) {
-        owner = msg.sender;
-        token = ERC20(_token);
-    }
-    
-    /**
-     * @dev Execute actions directly (for testing/development)
-     * @param actions Array of actions to execute
-     * @param allowFailureMap Bitmap indicating which actions are allowed to fail
-     */
-    function execute(Action[] calldata actions, uint256 allowFailureMap) 
-        external 
-        onlyOwner 
-        returns (bytes[] memory results) 
-    {
-        uint256 actionsLength = actions.length;
-        results = new bytes[](actionsLength);
-        
-        for (uint256 i = 0; i < actionsLength; ) {
-            Action memory action = actions[i];
-            bool isAllowedToFail = (allowFailureMap >> i) & 1 == 1;
-            
-            (bool success, bytes memory result) = action.to.call{value: action.value}(action.data);
-            
-            if (!success && !isAllowedToFail) {
-                revert("SimpleDAO: action execution failed");
-            }
-            
-            results[i] = result;
-            
-            unchecked {
-                ++i;
-            }
-        }
-        
-        emit ProposalExecuted(block.timestamp, true);
-    }
-    
-    /**
-     * @dev Transfer ownership to new address
-     */
-    function transferOwnership(address newOwner) external onlyOwner {
-        require(newOwner != address(0), "SimpleDAO: new owner is zero address");
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
-    }
-}
 
 /**
  * @title Development Chain Setup Script
@@ -108,6 +17,7 @@ contract SimpleDAO {
  * - RPC_URL: Sepolia RPC endpoint
  * 
  * Optional:
+ * - GOV_PROVIDER: Governance provider ("aragon", "simple", or "auto") - defaults to "auto"
  * - TOKEN_NAME: ERC20 token name (default: "Cogni Governance Token")
  * - TOKEN_SYMBOL: ERC20 token symbol (default: "CGT")
  * - TOKEN_SUPPLY: Initial token supply (default: 1000000000000000000000000 = 1M tokens)
@@ -116,11 +26,13 @@ contract SetupDevChain is Script {
     struct DeploymentResult {
         address token;
         address dao;
+        address adminPlugin;        // Admin plugin address (if applicable)
         address cogniSignal;
         address deployer;
         uint256 chainId;
         string tokenName;
         string tokenSymbol;
+        string govProviderType;     // Provider type used
     }
     
     function run() external returns (DeploymentResult memory result) {
@@ -128,14 +40,16 @@ contract SetupDevChain is Script {
         uint256 deployerPrivateKey = vm.envUint("DEV_WALLET_PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         
-        // Token configuration
+        // Configuration
+        string memory govProviderEnv = vm.envOr("GOV_PROVIDER", string("auto"));
         string memory tokenName = vm.envOr("TOKEN_NAME", string("Cogni Governance Token"));
         string memory tokenSymbol = vm.envOr("TOKEN_SYMBOL", string("CGT"));
         uint256 tokenSupply = vm.envOr("TOKEN_SUPPLY", uint256(1000000 * 10**18)); // 1M tokens
         
-        console2.log("=== Development Chain Setup ===");
+        console2.log("=== Development Chain Setup (Modular Governance) ===");
         console2.log("Deployer address:", deployer);
         console2.log("Chain ID:", block.chainid);
+        console2.log("Gov Provider:", govProviderEnv);
         console2.log("Token Name:", tokenName);
         console2.log("Token Symbol:", tokenSymbol);
         console2.log("Initial Supply:", tokenSupply / 10**18, "tokens");
@@ -148,29 +62,26 @@ contract SetupDevChain is Script {
         
         vm.startBroadcast(deployerPrivateKey);
         
-        // 1. Deploy ERC20 Token
-        console2.log("Deploying ERC20 token...");
-        CogniToken token = new CogniToken(
-            tokenName,
-            tokenSymbol,
-            18, // decimals
-            tokenSupply,
-            deployer // mint to deployer
-        );
-        console2.log("Token deployed:", address(token));
+        // 1. Create governance provider
+        GovProviderFactory.ProviderType providerType = GovProviderFactory.parseProviderType(govProviderEnv);
+        IGovProvider govProvider = GovProviderFactory.createProvider(providerType);
         
-        // 2. Deploy Simple DAO
-        console2.log("Deploying Simple DAO...");
-        SimpleDAO dao = new SimpleDAO(address(token));
-        console2.log("DAO deployed:", address(dao));
+        // 2. Deploy governance infrastructure
+        console2.log("Deploying governance infrastructure...");
+        IGovProvider.GovConfig memory govConfig = IGovProvider.GovConfig({
+            tokenName: tokenName,
+            tokenSymbol: tokenSymbol,
+            tokenSupply: tokenSupply,
+            deployer: deployer,
+            providerSpecificConfig: bytes("")
+        });
         
-        // 3. Deploy CogniSignal Contract using existing Deploy script
+        IGovProvider.GovDeploymentResult memory govResult = govProvider.deployGovernance(govConfig);
+        
+        // 3. Deploy CogniSignal Contract
         console2.log("Deploying CogniSignal contract...");
+        vm.setEnv("DAO_ADDRESS", vm.toString(govResult.daoAddress));
         
-        // Set DAO_ADDRESS for Deploy script
-        vm.setEnv("DAO_ADDRESS", vm.toString(address(dao)));
-        
-        // Create and run Deploy script without nested broadcast
         Deploy deployScript = new Deploy();
         CogniSignal cogniSignal = deployScript.runWithoutBroadcast();
         console2.log("CogniSignal deployed:", address(cogniSignal));
@@ -179,18 +90,21 @@ contract SetupDevChain is Script {
         
         // Prepare result
         result = DeploymentResult({
-            token: address(token),
-            dao: address(dao),
+            token: govResult.tokenAddress,
+            dao: govResult.daoAddress,
+            adminPlugin: govResult.adminPluginAddress,
             cogniSignal: address(cogniSignal),
             deployer: deployer,
             chainId: block.chainid,
             tokenName: tokenName,
-            tokenSymbol: tokenSymbol
+            tokenSymbol: tokenSymbol,
+            govProviderType: govResult.providerType
         });
         
         // Print deployment summary and environment variables
         _printDeploymentSummary(result);
         _printEnvironmentVariables(result);
+        _saveEnvironmentVariablesToFile(result);
         
         return result;
     }
@@ -199,8 +113,12 @@ contract SetupDevChain is Script {
         console2.log("");
         console2.log("DEPLOYMENT COMPLETE!");
         console2.log("========================");
+        console2.log("Governance Type:", result.govProviderType);
         console2.log("ERC20 Token:    ", result.token);
         console2.log("DAO:           ", result.dao);
+        if (result.adminPlugin != address(0)) {
+            console2.log("Admin Plugin:  ", result.adminPlugin);
+        }
         console2.log("CogniSignal:   ", result.cogniSignal);
         console2.log("Chain ID:      ", result.chainId);
         console2.log("Deployer:      ", result.deployer);
@@ -221,6 +139,13 @@ contract SetupDevChain is Script {
         console2.log("E2E_COGNISIGNAL_CONTRACT=", vm.toString(result.cogniSignal));
         console2.log("COGNI_ALLOWED_DAO=", _toLowerCase(result.dao));
         console2.log("E2E_DAO_ADDRESS=", vm.toString(result.dao));
+        
+        // Print admin plugin address if available (for Aragon OSx)
+        if (result.adminPlugin != address(0)) {
+            console2.log("E2E_ADMIN_PLUGIN_CONTRACT=", vm.toString(result.adminPlugin));
+        } else {
+            console2.log("# E2E_ADMIN_PLUGIN_CONTRACT=  # Not applicable for ", result.govProviderType);
+        }
         console2.log("");
         console2.log("# Token Information");
         console2.log("E2E_GOVERNANCE_TOKEN=", vm.toString(result.token));
@@ -246,5 +171,57 @@ contract SetupDevChain is Script {
             str[3+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
         }
         return string(str);
+    }
+    
+    function _saveEnvironmentVariablesToFile(DeploymentResult memory result) internal {
+        string memory filename = string.concat(".env.", result.tokenSymbol);
+        console2.log("Saving environment variables to:", filename);
+        
+        string memory envContent = string.concat(
+            "# Deployment Environment Variables\n",
+            "# Generated by SetupDevChain.s.sol at ", vm.toString(block.timestamp), "\n\n",
+            
+            "# Chain Configuration\n",
+            "COGNI_CHAIN_ID=", vm.toString(result.chainId), "\n",
+            "E2E_SEPOLIA_RPC_URL=", vm.envString("RPC_URL"), "\n\n",
+            
+            "# Contract Addresses\n",
+            "COGNI_SIGNAL_CONTRACT=", vm.toString(result.cogniSignal), "\n",
+            "E2E_COGNISIGNAL_CONTRACT=", vm.toString(result.cogniSignal), "\n",
+            "COGNI_ALLOWED_DAO=", _toLowerCase(result.dao), "\n",
+            "E2E_DAO_ADDRESS=", vm.toString(result.dao), "\n"
+        );
+        
+        // Add admin plugin if available
+        if (result.adminPlugin != address(0)) {
+            envContent = string.concat(
+                envContent,
+                "E2E_ADMIN_PLUGIN_CONTRACT=", vm.toString(result.adminPlugin), "\n"
+            );
+        } else {
+            envContent = string.concat(
+                envContent,
+                "# E2E_ADMIN_PLUGIN_CONTRACT=  # Not applicable for ", result.govProviderType, "\n"
+            );
+        }
+        
+        envContent = string.concat(
+            envContent,
+            "\n# Token Information\n",
+            "E2E_GOVERNANCE_TOKEN=", vm.toString(result.token), "\n",
+            "E2E_TOKEN_NAME=", result.tokenName, "\n",
+            "E2E_TOKEN_SYMBOL=", result.tokenSymbol, "\n\n",
+            
+            "# Development Wallet\n",
+            "E2E_TEST_WALLET_PRIVATE_KEY=", vm.envString("DEV_WALLET_PRIVATE_KEY"), "\n",
+            "E2E_DEPLOYER_ADDRESS=", vm.toString(result.deployer), "\n\n",
+            
+            "# Governance Provider Info\n",
+            "GOV_PROVIDER_TYPE=", result.govProviderType, "\n"
+        );
+        
+        // Write to file
+        vm.writeFile(filename, envContent);
+        console2.log("Environment variables saved to:", filename);
     }
 }

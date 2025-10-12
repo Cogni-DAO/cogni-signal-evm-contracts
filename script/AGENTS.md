@@ -1,38 +1,63 @@
 # Deployment Scripts
 
-## SetupDevChain.s.sol ⭐ **New**
+## SetupDevChain.s.sol
 
-Complete development stack deployment: ERC20 Token → DAO → CogniSignal.
+Complete development stack deployment with modular governance provider system.
+
+### Architecture
+Deploys a complete stack using pluggable governance providers:
+1. **Governance Provider** - Modular system supporting multiple DAO frameworks
+2. **ERC20 Token** - Governance token with configurable parameters
+3. **DAO Contract** - Selected based on provider (Aragon OSx, SimpleDAO, etc.)
+4. **CogniSignal** - Governance-agnostic signal aggregation contract
+
+### Governance Provider System
+
+The deployment uses a provider pattern (`script/gov_providers/`) that enables:
+- **IGovProvider** - Standard interface for all governance providers
+- **GovProviderFactory** - Factory with auto-selection and fallback logic
+- **AragonOSxProvider** - Production-ready Aragon OSx with admin plugin support
+- **SimpleDaoProvider** - Lightweight fallback for development environments
+
+Provider selection logic:
+1. `GOV_PROVIDER=auto` (default) - Tries Aragon OSx first, falls back to SimpleDAO if unavailable
+2. `GOV_PROVIDER=aragon` - Forces Aragon OSx (fails if unavailable on network)
+3. `GOV_PROVIDER=simple` - Forces SimpleDAO deployment
 
 ### Usage
 ```bash
 # Set environment
 export DEV_WALLET_PRIVATE_KEY=0x...
 export RPC_URL=https://eth-sepolia...
+export GOV_PROVIDER=auto  # Optional: auto|aragon|simple
 
 # Deploy complete stack
 forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $RPC_URL --broadcast
 ```
 
-### What It Deploys
-1. **ERC20 Token** (`CogniToken`) - Governance token with configurable supply
-2. **Simple DAO** (`SimpleDAO`) - Minimal DAO with execute() function
-3. **CogniSignal** - Uses existing `Deploy.s.sol` script for consistency
-
 ### Environment Variables
 **Required:**
-- `DEV_WALLET_PRIVATE_KEY` - Funded Sepolia wallet private key
-- `RPC_URL` - Sepolia RPC endpoint
+- `DEV_WALLET_PRIVATE_KEY` - Funded wallet private key
+- `RPC_URL` - Network RPC endpoint
 
 **Optional:**
+- `GOV_PROVIDER` - Governance provider selection (default: "auto")
 - `TOKEN_NAME` - Token name (default: "Cogni Governance Token")
 - `TOKEN_SYMBOL` - Token symbol (default: "CGT")  
 - `TOKEN_SUPPLY` - Initial supply (default: 1M tokens)
 
 ### Output
-Prints copyable environment variables for `cogni-git-admin` .env configuration.
+1. Prints deployment summary with all contract addresses
+2. Displays environment variables for cogni-git-admin integration
+3. Saves configuration to `.env.{TOKEN_SYMBOL}` file
 
-See `DEV-CHAIN-SETUP.md` for complete setup guide.
+Key output variables:
+- `E2E_ADMIN_PLUGIN_CONTRACT` - Admin plugin address (Aragon OSx only)
+- `E2E_DAO_ADDRESS` - DAO contract address
+- `E2E_GOVERNANCE_TOKEN` - ERC20 token address
+- `COGNI_SIGNAL_CONTRACT` - CogniSignal contract address
+
+The saved `.env.{TOKEN_SYMBOL}` file contains all deployment information for E2E testing and future reference.
 
 ---
 

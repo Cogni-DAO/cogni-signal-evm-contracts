@@ -10,5 +10,11 @@
       "name": "v5.0.2",
       "rev": "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
     }
+  },
+  "lib/osx": {
+    "tag": {
+      "name": "v1.4.5",
+      "rev": "ee4b3e4dbb3e6972fc1ce35c6864bfc8c2166b3d"
+    }
   }
 }

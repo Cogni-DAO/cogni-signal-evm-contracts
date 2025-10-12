@@ -12,3 +12,7 @@ docs/
 
 # Dotenv file
 .env
+.env.*
+
+# Dependencies (use forge install, don't commit)
+lib/osx
