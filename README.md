@@ -2,11 +2,62 @@
 
 Minimal on-chain governance signals for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
+## Setup Prerequisites
+
+### 0. Install MetaMask
+If you haven't already, install [MetaMask browser extension](https://metamask.io/).
+
+### 1. Create Test Wallet
+1. Open MetaMask and click "Create a new wallet"
+2. Set wallet name: `<your test account>` (e.g., "Cogni Dev Wallet")  
+3. Add Sepolia testnet:
+   - Click network dropdown → "Add network"
+   - **Network Name:** Sepolia test network
+   - **RPC URL:** `https://sepolia.infura.io/v3/` (or use step 3 URL)
+   - **Chain ID:** `11155111`
+   - **Currency Symbol:** SepoliaETH
+   - **Block Explorer:** `https://sepolia.etherscan.io`
+
+### 2. Get Test ETH from Faucet
+Fund your wallet with ~0.1 ETH from any Sepolia faucet:
+- **Alchemy Faucet:** [sepoliafaucet.com](https://sepoliafaucet.com/)
+- **Chainlink Faucet:** [faucets.chain.link/sepolia](https://faucets.chain.link/sepolia)
+- **QuickNode Faucet:** [faucet.quicknode.com/ethereum/sepolia](https://faucet.quicknode.com/ethereum/sepolia)
+
+💡 **Get Private Key:** In MetaMask → Account Details → "Show private key" → Enter password → Copy key
+
+### 3. Get RPC URL
+Choose one provider and sign up for a free API key:
+
+**Alchemy (Recommended):**
+1. Go to [dashboard.alchemy.com](https://dashboard.alchemy.com/)
+2. Create account → "Create new app" 
+3. Select "Ethereum" → "Sepolia"
+4. Copy HTTP URL: `https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY`
+
+**Infura:**
+1. Go to [infura.io](https://infura.io/)  
+2. Create project → Select "Web3 API"
+3. Copy endpoint: `https://sepolia.infura.io/v3/YOUR_PROJECT_ID`
+
+**QuickNode:**
+1. Go to [quicknode.com](https://quicknode.com/)
+2. Create endpoint → "Ethereum" → "Sepolia"
+3. Copy HTTP Provider URL
+
 ## Quick Start
 
 ```bash
-forge test        # Run all tests
-forge build       # Build contracts
+# Set environment (copy from MetaMask & RPC provider)
+export DEV_WALLET_PRIVATE_KEY=0x...    # From MetaMask account details
+export RPC_URL=https://eth-sepolia...  # From step 3 above
+
+# Deploy complete development stack
+make dao-setup
+
+# Run tests
+forge test        
+forge build       
 ```
 
 ## Contract
