@@ -9,7 +9,7 @@ contract MyContractE2E is Test {
     MyContract public myContract;
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("RPC_URL"));
+        vm.createSelectFork(vm.envString("EVM_RPC_URL"));
         myContract = new MyContract(DAO);
     }
 }

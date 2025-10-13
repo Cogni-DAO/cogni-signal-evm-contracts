@@ -48,11 +48,14 @@ Choose one provider and sign up for a free API key:
 ## Quick Start
 
 ```bash
-# Set environment (copy from MetaMask & RPC provider)
-export DEV_WALLET_PRIVATE_KEY=0x...    # From MetaMask account details
-export RPC_URL=https://eth-sepolia...  # From step 3 above
+# 1. Copy environment template
+cp .env.TOKEN.example .env
 
-# Deploy complete development stack
+# 2. Edit .env with your values:
+# WALLET_PRIVATE_KEY=0x...    # From MetaMask account details
+# EVM_RPC_URL=https://eth-sepolia...  # From step 3 above
+
+# 3. Deploy complete development stack
 make dao-setup
 
 # Run tests
@@ -81,13 +84,13 @@ forge build
 ## Deployment
 
 ```bash
-# Set environment variables
-export DAO_ADDRESS=0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5
-export RPC_URL=<sepolia_rpc>
-export ETHERSCAN_API_KEY=<key>
+# 1. Set DAO_ADDRESS in .env file:
+# DAO_ADDRESS=0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5
+# EVM_RPC_URL=<sepolia_rpc>
+# ETHERSCAN_API_KEY=<key>
 
-# Deploy and verify
-forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_URL --broadcast --verify
+# 2. Deploy and verify
+make deploy-contract
 ```
 
 See `AGENTS.md` for technical details and `COGNI-GIT-ADMIN-INTEGRATION.md` for integration guide.

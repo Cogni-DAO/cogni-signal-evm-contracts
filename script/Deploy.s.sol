@@ -18,7 +18,7 @@ contract Deploy is Script {
         require(dao != address(0), "DAO_ADDRESS not set");
         
         if (!skipBroadcast) {
-            vm.startBroadcast(uint256(vm.envBytes32("DEV_WALLET_PRIVATE_KEY")));
+            vm.startBroadcast(uint256(vm.envBytes32("WALLET_PRIVATE_KEY")));
         }
         
         CogniSignal signal = new CogniSignal(dao);

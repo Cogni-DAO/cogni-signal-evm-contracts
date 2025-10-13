@@ -54,8 +54,8 @@ event CogniAction(
 **Quick Start:** Deploy complete development stack (ERC20 → DAO → CogniSignal)
 ```bash
 # Add to .env file:
-DEV_WALLET_PRIVATE_KEY=0x...  # Funded Sepolia wallet
-RPC_URL=https://eth-sepolia... # Sepolia RPC
+WALLET_PRIVATE_KEY=0x...  # Funded Sepolia wallet
+EVM_RPC_URL=https://eth-sepolia... # Sepolia RPC
 
 # Deploy complete stack
 make dao-setup

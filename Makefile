@@ -9,16 +9,16 @@ export
 dao-setup:
 	@echo "Deploying complete development stack: ERC20 → DAO → CogniSignal"
 	@echo "Checking required environment variables..."
-	@test -n "$(DEV_WALLET_PRIVATE_KEY)" || (echo "❌ DEV_WALLET_PRIVATE_KEY not set in .env" && exit 1)
-	@test -n "$(RPC_URL)" || (echo "❌ RPC_URL not set in .env" && exit 1)
+	@test -n "$(WALLET_PRIVATE_KEY)" || (echo "❌ WALLET_PRIVATE_KEY not set in .env" && exit 1)
+	@test -n "$(EVM_RPC_URL)" || (echo "❌ EVM_RPC_URL not set in .env" && exit 1)
 	@echo "✅ Environment variables loaded from .env"
-	forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $(RPC_URL) --broadcast
+	forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $(EVM_RPC_URL) --broadcast
 
 deploy-contract:
 	@echo "Deploying CogniSignal contract with existing DAO"
 	@echo "Checking required environment variables..."
-	@test -n "$(DEV_WALLET_PRIVATE_KEY)" || (echo "❌ DEV_WALLET_PRIVATE_KEY not set in .env" && exit 1)
-	@test -n "$(RPC_URL)" || (echo "❌ RPC_URL not set in .env" && exit 1)
+	@test -n "$(WALLET_PRIVATE_KEY)" || (echo "❌ WALLET_PRIVATE_KEY not set in .env" && exit 1)
+	@test -n "$(EVM_RPC_URL)" || (echo "❌ EVM_RPC_URL not set in .env" && exit 1)
 	@test -n "$(DAO_ADDRESS)" || (echo "❌ DAO_ADDRESS not set in .env" && exit 1)
 	@echo "✅ Environment variables loaded from .env"
-	forge script script/Deploy.s.sol:Deploy --rpc-url $(RPC_URL) --broadcast
+	forge script script/Deploy.s.sol:Deploy --rpc-url $(EVM_RPC_URL) --broadcast

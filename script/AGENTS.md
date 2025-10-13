@@ -26,8 +26,8 @@ Provider selection logic:
 ### Usage
 ```bash
 # Set environment (add to .env file)
-DEV_WALLET_PRIVATE_KEY=0x...
-RPC_URL=https://eth-sepolia...
+WALLET_PRIVATE_KEY=0x...
+EVM_RPC_URL=https://eth-sepolia...
 GOV_PROVIDER=aragon  # Optional: aragon|simple
 
 # Deploy complete stack
@@ -38,8 +38,8 @@ make dao-setup
 
 ### Environment Variables
 **Required:**
-- `DEV_WALLET_PRIVATE_KEY` - Funded wallet private key
-- `RPC_URL` - Network RPC endpoint
+- `WALLET_PRIVATE_KEY` - Funded wallet private key
+- `EVM_RPC_URL` - Network RPC endpoint
 
 **Optional:**
 - `GOV_PROVIDER` - Governance provider selection (default: "aragon")
@@ -63,11 +63,11 @@ The saved `.env.{TOKEN_SYMBOL}` file contains all deployment information for E2E
 ### Troubleshooting
 ```bash
 # Check wallet balance (get address from private key)
-cast wallet address --private-key $DEV_WALLET_PRIVATE_KEY
-cast balance $(cast wallet address --private-key $DEV_WALLET_PRIVATE_KEY) --rpc-url $RPC_URL
+cast wallet address --private-key $WALLET_PRIVATE_KEY
+cast balance $(cast wallet address --private-key $WALLET_PRIVATE_KEY) --rpc-url $EVM_RPC_URL
 
 # Test RPC connectivity  
-cast block latest --rpc-url $RPC_URL
+cast block latest --rpc-url $EVM_RPC_URL
 
 # If deployment fails, check .env variables are loaded
 make dao-setup  # Uses Makefile which auto-loads .env
@@ -83,12 +83,12 @@ Foundry script for deploying CogniSignal contract with existing DAO.
 
 ### Usage
 ```bash
-forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_URL --broadcast --verify
+forge script script/Deploy.s.sol:Deploy --rpc-url $EVM_RPC_URL --broadcast --verify
 ```
 
 ### Environment Variables
 - `DAO_ADDRESS` - Existing DAO address that will control the contract
-- `DEV_WALLET_PRIVATE_KEY` - Deployer private key  
+- `WALLET_PRIVATE_KEY` - Deployer private key  
 - `ETHERSCAN_API_KEY` - For contract verification
 
 ### Validations
