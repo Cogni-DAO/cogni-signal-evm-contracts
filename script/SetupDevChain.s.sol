@@ -23,6 +23,10 @@ import {GovProviderFactory} from "./gov_providers/GovProviderFactory.sol";
  * - TOKEN_SUPPLY: Initial token supply (default: 1000000000000000000000000 = 1M tokens)
  */
 contract SetupDevChain is Script {
+    function mustHaveCode(address a, string memory tag) internal view {
+        require(a.code.length > 0, string.concat("no code: ", tag));
+    }
+    
     struct DeploymentResult {
         address token;
         address dao;
@@ -36,8 +40,11 @@ contract SetupDevChain is Script {
     }
     
     function run() external returns (DeploymentResult memory result) {
+        // Fork real chain state
+        vm.createSelectFork(vm.envString("RPC_URL"));
+        
         // Validate environment
-        uint256 deployerPrivateKey = vm.envUint("DEV_WALLET_PRIVATE_KEY");
+        uint256 deployerPrivateKey = uint256(vm.envBytes32("DEV_WALLET_PRIVATE_KEY"));
         address deployer = vm.addr(deployerPrivateKey);
         
         // Configuration
@@ -55,10 +62,10 @@ contract SetupDevChain is Script {
         console2.log("Initial Supply:", tokenSupply / 10**18, "tokens");
         console2.log("");
         
-        // Check deployer balance
+        // Check deployer balance on real chain
         uint256 balance = deployer.balance;
-        require(balance >= 0.04 ether, "Insufficient ETH balance for deployment");
         console2.log("Deployer balance:", balance / 1 ether, "ETH");
+        require(balance >= 0.01 ether, "Insufficient ETH balance for deployment");
         
         vm.startBroadcast(deployerPrivateKey);
         
@@ -78,13 +85,16 @@ contract SetupDevChain is Script {
         
         IGovProvider.GovDeploymentResult memory govResult = govProvider.deployGovernance(govConfig);
         
+        // Verify governance infrastructure was actually deployed
+        mustHaveCode(govResult.daoAddress, "DAO");
+        mustHaveCode(govResult.tokenAddress, "Token");
+        // Note: Admin plugin may not have code until applyInstallation is called
+        
         // 3. Deploy CogniSignal Contract
         console2.log("Deploying CogniSignal contract...");
-        vm.setEnv("DAO_ADDRESS", vm.toString(govResult.daoAddress));
-        
-        Deploy deployScript = new Deploy();
-        CogniSignal cogniSignal = deployScript.runWithoutBroadcast();
+        CogniSignal cogniSignal = new CogniSignal(govResult.daoAddress);
         console2.log("CogniSignal deployed:", address(cogniSignal));
+        mustHaveCode(address(cogniSignal), "CogniSignal");
         
         vm.stopBroadcast();
         
@@ -152,12 +162,9 @@ contract SetupDevChain is Script {
         console2.log("E2E_TOKEN_NAME=", result.tokenName);
         console2.log("E2E_TOKEN_SYMBOL=", result.tokenSymbol);
         console2.log("");
-        console2.log("# Development Wallet (KEEP SECURE!)");
-        console2.log("E2E_TEST_WALLET_PRIVATE_KEY=", vm.envString("DEV_WALLET_PRIVATE_KEY"));
+        console2.log("# Development Wallet");
         console2.log("E2E_DEPLOYER_ADDRESS=", vm.toString(result.deployer));
         console2.log("");
-        console2.log("NOTE: The DAO owner is set to the deployer address.");
-        console2.log("For production, transfer ownership to a multisig or governance contract.");
     }
     
     function _toLowerCase(address addr) internal pure returns (string memory) {
@@ -213,7 +220,6 @@ contract SetupDevChain is Script {
             "E2E_TOKEN_SYMBOL=", result.tokenSymbol, "\n\n",
             
             "# Development Wallet\n",
-            "E2E_TEST_WALLET_PRIVATE_KEY=", vm.envString("DEV_WALLET_PRIVATE_KEY"), "\n",
             "E2E_DEPLOYER_ADDRESS=", vm.toString(result.deployer), "\n\n",
             
             "# Governance Provider Info\n",

@@ -16,10 +16,9 @@ contract Deploy is Script {
     function _deploy(bool skipBroadcast) internal returns (CogniSignal) {
         address dao = vm.envAddress("DAO_ADDRESS");
         require(dao != address(0), "DAO_ADDRESS not set");
-        require(dao != msg.sender, "DAO should not be deployer address");
         
         if (!skipBroadcast) {
-            vm.startBroadcast(vm.envUint("DEV_WALLET_PRIVATE_KEY"));
+            vm.startBroadcast(uint256(vm.envBytes32("DEV_WALLET_PRIVATE_KEY")));
         }
         
         CogniSignal signal = new CogniSignal(dao);
