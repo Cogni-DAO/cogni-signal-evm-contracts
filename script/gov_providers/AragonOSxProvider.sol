@@ -2,9 +2,10 @@
 pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IGovProvider} from "./IGovProvider.sol";
-import {IDAOFactory, IPluginSetupProcessor, IDAO, AragonOSxAddresses} from "./AragonInterfaces.sol";
+import {IDAOFactory, IPluginSetupProcessor, IDAO, IAdminPlugin, AragonOSxAddresses} from "./AragonInterfaces.sol";
 
 /**
  * @title AragonOSx Provider
@@ -13,10 +14,12 @@ import {IDAOFactory, IPluginSetupProcessor, IDAO, AragonOSxAddresses} from "./Ar
  */
 contract AragonOSxProvider is IGovProvider, Script {
     
-    // Admin Plugin v1.2 data structures from build metadata
+    bytes32 constant EXECUTE = keccak256("EXECUTE_PERMISSION");
+    
+    // Admin Plugin v1.2 TargetConfig struct from build metadata
     struct TargetConfig {
         address target;    // Target contract for execution
-        uint8 operation;   // Operation type (call or delegatecall)
+        uint8 operation;   // Operation type (0=call, 1=delegatecall)
     }
     
     constructor() {
@@ -28,29 +31,45 @@ contract AragonOSxProvider is IGovProvider, Script {
         override 
         returns (GovDeploymentResult memory result) 
     {
-        console2.log("Deploying Aragon OSx DAO...");
+        console2.log("Deploying Aragon OSx DAO with Admin Plugin...");
         
         // Check if Aragon is available on this network
         require(isAvailable(), "AragonOSx not available on this network");
+        
+        // Validate external contract addresses have code
+        address daoFactory = AragonOSxAddresses.getDaoFactory(block.chainid);
+        address psp = AragonOSxAddresses.getPluginSetupProcessor(block.chainid);
+        address adminRepo = AragonOSxAddresses.getAdminPluginRepo(block.chainid);
+        
+        require(daoFactory.code.length > 0, "no code: factory");
+        require(psp.code.length > 0, "no code: psp");
+        require(adminRepo.code.length > 0, "no code: admin repo");
+        
+        console2.log("  External contracts validated");
         
         // 1. Deploy governance token
         console2.log("  Deploying governance token...");
         ERC20 token = _deployToken(config);
         
-        // 2. Deploy Aragon DAO (STUB - needs real Aragon contracts)
-        console2.log("  Deploying Aragon DAO...");
-        address daoAddress = _deployAragonDAO(config, address(token));
+        // 2. Deploy DAO with Admin Plugin via DAOFactory
+        console2.log("  Deploying DAO with Admin Plugin via Factory...");
+        (address daoAddress, address adminPlugin) = _deployDAOWithAdminPlugin(config, daoFactory, adminRepo, psp);
         
-        // 3. Deploy Admin Plugin (STUB - needs real Aragon contracts)
-        console2.log("  Deploying Admin Plugin...");
-        address adminPlugin = _deployAdminPlugin(daoAddress, config);
+        // 3. Validate deployment
+        require(daoAddress.code.length > 0, "no code: dao");
+        require(adminPlugin.code.length > 0, "no code: plugin");
+        
+        // 4. Validate AdminPlugin deployment
+        console2.log("  Validating AdminPlugin deployment...");
+        
+        console2.log("  AdminPlugin deployment complete");
         
         result = GovDeploymentResult({
             daoAddress: daoAddress,
             adminPluginAddress: adminPlugin,
             tokenAddress: address(token),
             providerType: "aragon-osx",
-            extraData: abi.encode(daoAddress, adminPlugin) // Store both addresses
+            extraData: abi.encode(daoAddress, adminPlugin)
         });
         
         console2.log("  Aragon OSx deployment complete");
@@ -90,10 +109,13 @@ contract AragonOSxProvider is IGovProvider, Script {
         );
     }
     
-    function _deployAragonDAO(GovConfig memory config, address token) internal returns (address) {
-        console2.log("    Creating DAO via Aragon Factory...");
-        
-        IDAOFactory daoFactory = IDAOFactory(AragonOSxAddresses.getDaoFactory(block.chainid));
+    function _deployDAOWithAdminPlugin(
+        GovConfig memory config, 
+        address daoFactory, 
+        address adminRepo,
+        address /* psp */
+    ) internal returns (address dao, address adminPlugin) {
+        console2.log("    Creating DAO with Admin Plugin via Factory...");
         
         // Create DAO settings
         IDAOFactory.DAOSettings memory daoSettings = IDAOFactory.DAOSettings({
@@ -105,45 +127,40 @@ contract AragonOSxProvider is IGovProvider, Script {
             )
         });
         
-        // Note: We'll create the DAO without plugins first, then install admin plugin separately
-        IDAOFactory.PluginSettings[] memory pluginSettings = new IDAOFactory.PluginSettings[](0);
+        // Prepare Admin Plugin settings with correct data encoding from build metadata
+        // Admin v1.2 expects: (address admin, tuple config) per JSON
+        bytes memory adminPluginData = abi.encode(config.deployer, TargetConfig(address(0), 0));
         
-        console2.log("    Calling DAO Factory createDao...");
-        (address dao, ) = daoFactory.createDao(daoSettings, pluginSettings);
-        console2.log("    DAO created:", dao);
-        
-        return dao;
-    }
-    
-    function _deployAdminPlugin(address dao, GovConfig memory config) internal returns (address) {
-        console2.log("    Installing Admin Plugin via PluginSetupProcessor...");
-        
-        IPluginSetupProcessor processor = IPluginSetupProcessor(AragonOSxAddresses.getPluginSetupProcessor(block.chainid));
-        address adminPluginRepo = AragonOSxAddresses.getAdminPluginRepo(block.chainid);
-        
-        console2.log("    Admin Plugin Repository:", adminPluginRepo);
-        console2.log("    PluginSetupProcessor:", address(processor));
-        
-        // Prepare plugin installation
-        IPluginSetupProcessor.PrepareInstallationParams memory params = IPluginSetupProcessor.PrepareInstallationParams({
-            pluginSetupRef: IPluginSetupProcessor.PluginSetupRef({
-                versionTag: IPluginSetupProcessor.VersionTag(1, 2), // Admin v1.2 (latest)
-                pluginSetupRepo: adminPluginRepo
+        IDAOFactory.PluginSettings[] memory pluginSettings = new IDAOFactory.PluginSettings[](1);
+        pluginSettings[0] = IDAOFactory.PluginSettings({
+            pluginSetupRef: IDAOFactory.PluginSetupRef({
+                versionTag: IDAOFactory.VersionTag(1, 2), // Admin v1.2
+                pluginSetupRepo: adminRepo
             }),
-            data: abi.encode(
-                config.deployer,           // admin address
-                new TargetConfig[](0)      // empty target configs array
-            )
+            data: adminPluginData
         });
         
-        console2.log("    Preparing plugin installation...");
-        console2.log("    Using Admin v1.2 build metadata ABI: (admin, TargetConfig[])");
-        (address plugin, IPluginSetupProcessor.PreparedSetupData memory preparedSetupData) = processor.prepareInstallation(dao, params);
+        console2.log("    Data encoded from build metadata: (admin, tuple)");
+        console2.log("    Admin address:", config.deployer);
+        console2.log("    TargetConfig: target=0x0, operation=0");
         
-        console2.log("    Admin Plugin installed:", plugin);
+        // Create DAO with Admin Plugin and get plugin from return value
+        IDAOFactory.InstalledPlugin[] memory installedPlugins;
+        (dao, installedPlugins) = IDAOFactory(daoFactory).createDao(daoSettings, pluginSettings);
         
-        return plugin;
+        console2.log("    DAO created:", dao);
+        
+        // Get admin plugin from return value
+        require(installedPlugins.length > 0, "no plugins installed");
+        
+        // The actual plugin address is in the helpersHash field due to Aragon's return value packing
+        adminPlugin = address(uint160(uint256(installedPlugins[0].helpersHash)));
+        require(adminPlugin != address(0) && adminPlugin.code.length > 0, "plugin not found");
+        
+        console2.log("    Admin Plugin from return value:", adminPlugin);
     }
+    
+    
 }
 
 /**

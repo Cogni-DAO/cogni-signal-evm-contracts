@@ -71,6 +71,11 @@ interface IPluginSetupProcessor {
         address dao,
         PrepareInstallationParams calldata params
     ) external returns (address plugin, PreparedSetupData memory preparedSetupData);
+    
+    function applyInstallation(
+        address dao,
+        PreparedSetupData calldata preparedSetupData
+    ) external;
 }
 
 interface IDAO {
@@ -83,6 +88,20 @@ interface IDAO {
     function execute(
         bytes32 callId,
         Action[] memory actions,
+        uint256 allowFailureMap
+    ) external returns (bytes[] memory execResults, uint256 failureMap);
+    
+    function hasPermission(
+        address where,
+        address who,
+        bytes32 permissionId,
+        bytes calldata data
+    ) external view returns (bool);
+}
+
+interface IAdminPlugin {
+    function execute(
+        IDAO.Action[] calldata actions,
         uint256 allowFailureMap
     ) external returns (bytes[] memory execResults, uint256 failureMap);
 }
