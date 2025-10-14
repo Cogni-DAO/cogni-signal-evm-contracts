@@ -2,18 +2,9 @@
 
 Minimal on-chain governance signals for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
-## 🚀 Current Status: Proof of Concept Working
+## Status: Proof of Concept Working ✅
 
-**Successes:**
-- ✅ End-to-end integration with cogni-git-admin functioning
-- ✅ `make dao-setup` deploys complete governance stack
-- ✅ Generates environment variables for seamless integration
-- ✅ Contract verified on Sepolia testnet
-
-**Limitations (POC Stage):**
-- ⚠️ Single wallet execution (not proper multi-signature governance)
-- ⚠️ Requires careful configuration and setup
-- ⚠️ Not production-ready without proper permission setup
+End-to-end integration functioning with single wallet execution for testing. See `COGNI-GIT-ADMIN-INTEGRATION.md` for complete integration details.
 
 ## Setup Prerequisites
 
@@ -87,46 +78,14 @@ The `make dao-setup` command generates environment variables for cogni-git-admin
 - Saves to `.env.{TOKEN_SYMBOL}` file for reference
 - Includes all addresses needed for E2E testing
 
-## Contract
+## Contract Details
 
-**`CogniSignal.sol`** - DAO-only contract that emits `CogniAction` events for GitHub operations.
-
-- **Sepolia:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1` ✅ [Verified](https://sepolia.etherscan.io/address/0x8f26cf7b9ca6790385e255e8ab63acc35e7b9fb1)
+- **CogniSignal:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1` ([Verified on Sepolia](https://sepolia.etherscan.io/address/0x8f26cf7b9ca6790385e255e8ab63acc35e7b9fb1))
 - **DAO:** `0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5`
-
-## Actions (MVP)
-
-- `PR_APPROVE` - Approve pull requests
-
-## Architecture
-
-1. DAO calls `signal(repo, action, target, pr, commit, extra)`  
-2. Contract emits `CogniAction` event
-3. [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin) processes via Alchemy webhooks
-4. GitHub action executed
-
-## Deployment
-
-```bash
-# 1. Set DAO_ADDRESS in .env file:
-# DAO_ADDRESS=0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5
-# EVM_RPC_URL=<sepolia_rpc>
-# ETHERSCAN_API_KEY=<key>
-
-# 2. Deploy and verify
-make deploy-contract
-```
+- **Action:** `PR_APPROVE` - Approve pull requests
 
 ## Documentation
 
-- `AGENTS.md` - Technical architecture and current limitations
-- `script/AGENTS.md` - Deployment scripts and configuration
-- `COGNI-GIT-ADMIN-INTEGRATION.md` - Integration with cogni-git-admin
-
-## Future Improvements
-
-This proof of concept demonstrates working governance signals. Production deployment requires:
-- Multi-signature DAO governance implementation
-- Proper permission management and role setup
-- Enhanced error handling and recovery mechanisms
-- Comprehensive audit and security review
+- `AGENTS.md` - Project overview and architecture
+- `COGNI-GIT-ADMIN-INTEGRATION.md` - Complete integration guide
+- `script/AGENTS.md` - Deployment script details
