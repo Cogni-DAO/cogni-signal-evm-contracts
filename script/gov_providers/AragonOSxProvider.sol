@@ -45,10 +45,8 @@ contract AragonOSxProvider is IGovProvider, Script {
         require(psp.code.length > 0, "no code: psp");
         require(adminRepo.code.length > 0, "no code: admin repo");
         
-        console2.log("  External contracts validated");
         
         // 1. Deploy governance token
-        console2.log("  Deploying governance token...");
         ERC20 token = _deployToken(config);
         
         // 2. Deploy DAO with Admin Plugin via DAOFactory
@@ -60,9 +58,7 @@ contract AragonOSxProvider is IGovProvider, Script {
         require(adminPlugin.code.length > 0, "no code: plugin");
         
         // 4. Validate AdminPlugin deployment
-        console2.log("  Validating AdminPlugin deployment...");
         
-        console2.log("  AdminPlugin deployment complete");
         
         result = GovDeploymentResult({
             daoAddress: daoAddress,
@@ -115,7 +111,6 @@ contract AragonOSxProvider is IGovProvider, Script {
         address adminRepo,
         address /* psp */
     ) internal returns (address dao, address adminPlugin) {
-        console2.log("    Creating DAO with Admin Plugin via Factory...");
         
         // Create DAO settings
         IDAOFactory.DAOSettings memory daoSettings = IDAOFactory.DAOSettings({
@@ -140,24 +135,22 @@ contract AragonOSxProvider is IGovProvider, Script {
             data: adminPluginData
         });
         
-        console2.log("    Data encoded from build metadata: (admin, tuple)");
-        console2.log("    Admin address:", config.deployer);
-        console2.log("    TargetConfig: target=0x0, operation=0");
         
         // Create DAO with Admin Plugin and get plugin from return value
         IDAOFactory.InstalledPlugin[] memory installedPlugins;
         (dao, installedPlugins) = IDAOFactory(daoFactory).createDao(daoSettings, pluginSettings);
         
-        console2.log("    DAO created:", dao);
         
         // Get admin plugin from return value
         require(installedPlugins.length > 0, "no plugins installed");
         
-        // The actual plugin address is in the helpersHash field due to Aragon's return value packing
+        // TODO: Fix helpersHash usage - Aragon's factory return struct is quirky on Sepolia:
+        // installedPlugins[0].plugin == 0x...20 (nonsense) while real plugin address 
+        // sits in low 20 bytes of helpersHash (and has code). Should use .plugin field
+        // but needs proper Aragon factory investigation first.
         adminPlugin = address(uint160(uint256(installedPlugins[0].helpersHash)));
         require(adminPlugin != address(0) && adminPlugin.code.length > 0, "plugin not found");
         
-        console2.log("    Admin Plugin from return value:", adminPlugin);
     }
     
     
