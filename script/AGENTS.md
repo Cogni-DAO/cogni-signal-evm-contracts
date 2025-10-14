@@ -48,17 +48,36 @@ make dao-setup
 - `TOKEN_SUPPLY` - Initial supply (default: 1M tokens)
 
 ### Output
-1. Prints deployment summary with all contract addresses
-2. Displays environment variables for cogni-git-admin integration
-3. Saves configuration to `.env.{TOKEN_SYMBOL}` file
 
-Key output variables:
-- `E2E_ADMIN_PLUGIN_CONTRACT` - Admin plugin address (Aragon OSx only)
-- `E2E_DAO_ADDRESS` - DAO contract address
-- `E2E_GOVERNANCE_TOKEN` - ERC20 token address
-- `COGNI_SIGNAL_CONTRACT` - CogniSignal contract address
+The deployment script provides an MVP .env.TOKEN output:
 
-The saved `.env.{TOKEN_SYMBOL}` file contains all deployment information for E2E testing and future reference.
+1. **Deployment Summary** - All deployed contract addresses
+2. **Environment Variables** - Ready for copy/paste to cogni-git-admin
+3. **Persistent Storage** - Saves to `.env.{TOKEN_SYMBOL}` file
+
+#### Generated Variables for cogni-git-admin Integration
+
+**Core Variables (Required):**
+- `WALLET_PRIVATE_KEY` - Wallet used for deployment and execution
+- `EVM_RPC_URL` - Network RPC endpoint
+- `SIGNAL_CONTRACT` - CogniSignal contract address
+- `DAO_ADDRESS` - DAO contract address for governance
+- `CHAIN_ID` - Network chain ID
+
+**Governance-Specific Variables:**
+- `ARAGON_ADMIN_PLUGIN_CONTRACT` - Admin plugin (Aragon OSx deployments only)
+- `GOVERNANCE_TOKEN` - ERC20 governance token address
+- `GOV_PROVIDER_TYPE` - Provider type used ("aragon" or "simple")
+
+#### Integration Workflow
+
+1. Run `make dao-setup` to deploy stack
+2. Copy console output variables or `.env.{TOKEN_SYMBOL}` file
+3. Paste variables into the bottom of the cogni-git-admin `.env` file
+4. Set up an Alchemy webhook, monitoring `SIGNAL_CONTRACT` and sending to cogni-git-admin `ALCHEMY_PROXY_URL` with `ALCHEMY_SIGNING_KEY`
+5. `npm run e2e` testing with cogni-git-admin
+
+**Note:** The system currently operates with single wallet execution for proof of concept testing. Production deployment requires proper multi-signature governance setup, and tests should involve dao voting. Not just an admin wallet triggering the CogniSignal.
 
 ### Troubleshooting
 ```bash

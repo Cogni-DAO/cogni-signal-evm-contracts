@@ -3,11 +3,17 @@
 ## Overview
 Minimal on-chain governance events for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
-## Status: MVP Complete ✅
+## Status: Proof of Concept Working ✅
 - **Contract:** `CogniSignal.sol` deployed and verified on Sepolia  
 - **Address:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1`
 - **Tests:** Unit + E2E tests passing (`forge test`)
-- **Integration:** Working with cogni-git-admin via Alchemy webhooks
+- **Integration:** End-to-end integration with cogni-git-admin functioning
+- **Deployment:** `make dao-setup` successfully deploys complete stack
+
+## Current Limitations (POC Status)
+- **Single Wallet Governance:** System uses single wallet execution for testing, not proper multi-signature DAO governance
+- **Fragile Implementation:** Proof of concept implementation requires careful configuration
+- **Production Readiness:** Requires proper permission setup and multi-signature governance before production use
 
 ## Architecture
 ```
@@ -59,7 +65,16 @@ EVM_RPC_URL=https://eth-sepolia... # Sepolia RPC
 
 # Deploy complete stack
 make dao-setup
+
+# Output includes environment variables for cogni-git-admin integration
+# Copy the generated .env.{TOKEN_SYMBOL} file or console output to cogni-git-admin
 ```
+
+**Integration:** The deployment generates environment variables compatible with cogni-git-admin:
+- `E2E_ADMIN_PLUGIN_CONTRACT` - Admin plugin for Aragon OSx deployments
+- `DAO_ADDRESS` - DAO contract address
+- `GOVERNANCE_TOKEN` - ERC20 governance token address
+- `SIGNAL_CONTRACT` - CogniSignal contract address
 
 **Documentation:**
 - `script/AGENTS.md` - Deployment scripts and setup guides

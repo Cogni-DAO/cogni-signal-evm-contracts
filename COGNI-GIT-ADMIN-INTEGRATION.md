@@ -2,6 +2,14 @@
 
 On-chain governance signals for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin/blob/main/AGENTS.md).
 
+## Integration Status: Proof of Concept Working ✅
+
+**Current State:**
+- End-to-end integration with cogni-git-admin functioning
+- `make dao-setup` generates complete environment configuration
+- Single wallet execution for testing (POC limitation)
+- Contract verified and operational on Sepolia testnet
+
 ## Contract Details
 - **Address:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1`
 - **Network:** Sepolia (Chain ID: 11155111) 
@@ -36,6 +44,25 @@ The [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin) processes th
 4. **GitHub Execution** - Convert governance signals to GitHub operations
 
 ### Environment Variables
+
+#### From `make dao-setup` Output
+
+The deployment script generates environment variables for cogni-git-admin:
+
+```bash
+# Core Configuration (copy from deployment output)
+WALLET_PRIVATE_KEY=0x...                                      # Deployment wallet
+EVM_RPC_URL=https://eth-sepolia...                           # Sepolia RPC
+SIGNAL_CONTRACT=0x...                                         # CogniSignal address
+DAO_ADDRESS=0x...                                             # DAO contract
+CHAIN_ID=11155111                                             # Sepolia
+
+# Optional (for Aragon deployments)
+ARAGON_ADMIN_PLUGIN_CONTRACT=0x...                           # Admin plugin address
+```
+
+#### Legacy Variable Names (for compatibility)
+
 ```bash
 COGNI_CHAIN_ID=11155111                                        # Sepolia
 COGNI_SIGNAL_CONTRACT=0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1
@@ -78,3 +105,16 @@ https://your-domain.com/api/v1/webhooks/onchain/cogni-signal
 - Only DAO address can call `signal()` (enforced by `onlyDAO` modifier)
 - Contract verified on Etherscan for transparency  
 - cogni-git-admin validates chain ID and DAO address on every event
+
+## Current Limitations
+
+**Proof of Concept Status:**
+- Single wallet execution for E2E testing (not true multi-signature governance)
+- Requires manual configuration steps
+- Governance permissions simplified for development
+
+**Production Requirements:**
+- Implement proper multi-signature governance
+- Configure comprehensive permission management
+- Audit smart contracts and integration points
+- Establish monitoring and alerting infrastructure

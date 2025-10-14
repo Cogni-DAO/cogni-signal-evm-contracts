@@ -2,6 +2,19 @@
 
 Minimal on-chain governance signals for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
+## 🚀 Current Status: Proof of Concept Working
+
+**Successes:**
+- ✅ End-to-end integration with cogni-git-admin functioning
+- ✅ `make dao-setup` deploys complete governance stack
+- ✅ Generates environment variables for seamless integration
+- ✅ Contract verified on Sepolia testnet
+
+**Limitations (POC Stage):**
+- ⚠️ Single wallet execution (not proper multi-signature governance)
+- ⚠️ Requires careful configuration and setup
+- ⚠️ Not production-ready without proper permission setup
+
 ## Setup Prerequisites
 
 ### 0. Install MetaMask
@@ -58,10 +71,21 @@ cp .env.TOKEN.example .env
 # 3. Deploy complete development stack
 make dao-setup
 
+# 4. Copy generated environment variables to cogni-git-admin
+# The script outputs variables to console and saves to .env.{TOKEN_SYMBOL}
+# These variables enable end-to-end testing with cogni-git-admin
+
 # Run tests
 forge test        
 forge build       
 ```
+
+### Integration Output
+
+The `make dao-setup` command generates environment variables for cogni-git-admin:
+- Displays variables in console for easy copy/paste
+- Saves to `.env.{TOKEN_SYMBOL}` file for reference
+- Includes all addresses needed for E2E testing
 
 ## Contract
 
@@ -93,4 +117,16 @@ forge build
 make deploy-contract
 ```
 
-See `AGENTS.md` for technical details and `COGNI-GIT-ADMIN-INTEGRATION.md` for integration guide.
+## Documentation
+
+- `AGENTS.md` - Technical architecture and current limitations
+- `script/AGENTS.md` - Deployment scripts and configuration
+- `COGNI-GIT-ADMIN-INTEGRATION.md` - Integration with cogni-git-admin
+
+## Future Improvements
+
+This proof of concept demonstrates working governance signals. Production deployment requires:
+- Multi-signature DAO governance implementation
+- Proper permission management and role setup
+- Enhanced error handling and recovery mechanisms
+- Comprehensive audit and security review
