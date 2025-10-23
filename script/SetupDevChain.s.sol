@@ -17,7 +17,7 @@ import {GovProviderFactory} from "./gov_providers/GovProviderFactory.sol";
  * - EVM_RPC_URL: Sepolia RPC endpoint
  * 
  * Optional:
- * - GOV_PROVIDER: Governance provider ("aragon", "simple", or "auto") - defaults to "auto"
+ * - GOV_PROVIDER: Governance provider ("aragon-osx", "simple") - defaults to "aragon-osx"
  * - TOKEN_NAME: ERC20 token name (default: "Cogni Governance Token")
  * - TOKEN_SYMBOL: ERC20 token symbol (default: "CGT")
  * - TOKEN_SUPPLY: Initial token supply (default: 1000000000000000000000000 = 1M tokens)
@@ -48,7 +48,7 @@ contract SetupDevChain is Script {
         address deployer = vm.addr(deployerPrivateKey);
         
         // Configuration
-        string memory govProviderEnv = vm.envOr("GOV_PROVIDER", string("aragon"));
+        string memory govProviderEnv = vm.envOr("GOV_PROVIDER", string("aragon-osx"));
         string memory tokenName = vm.envOr("TOKEN_NAME", string("Cogni Governance Token"));
         string memory tokenSymbol = vm.envOr("TOKEN_SYMBOL", string("CGT"));
         uint256 tokenSupply = vm.envOr("TOKEN_SUPPLY", uint256(1000000 * 10**18)); // 1M tokens
@@ -187,7 +187,7 @@ contract SetupDevChain is Script {
             "GOVERNANCE_TOKEN=", vm.toString(result.token), "\n",
             "TOKEN_NAME=", result.tokenName, "\n",
             "TOKEN_SYMBOL=", result.tokenSymbol, "\n",
-            "GOV_PROVIDER_TYPE=", result.govProviderType, "\n",
+            "GOV_PROVIDER=", result.govProviderType, "\n",
             "DEPLOYER_ADDRESS=", vm.toString(result.deployer), "\n"
         );
         

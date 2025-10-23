@@ -53,6 +53,8 @@ library GovProviderFactory {
         
         if (valueHash == keccak256("simple") || valueHash == keccak256("simple-dao")) {
             return ProviderType.SIMPLE;
+        } else if (valueHash == keccak256("aragon") || valueHash == keccak256("aragon-osx")) {
+            return ProviderType.ARAGON;
         } else {
             return ProviderType.ARAGON; // Default to Aragon
         }
@@ -69,7 +71,7 @@ library GovProviderFactory {
         if (providerType == ProviderType.SIMPLE) {
             return "simple";
         } else {
-            return "aragon";
+            return "aragon-osx";
         }
     }
 }
