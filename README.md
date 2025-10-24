@@ -49,6 +49,17 @@ Choose one provider and sign up for a free API key:
 2. Create endpoint → "Ethereum" → "Sepolia"
 3. Copy HTTP Provider URL
 
+### 4. Get Etherscan API Key (Required for Verification)
+Contract verification ensures transparency and enables interaction through Etherscan:
+
+1. Go to [etherscan.io/register](https://etherscan.io/register)
+2. Create free account and verify email
+3. Visit [etherscan.io/apidashboard](https://etherscan.io/apidashboard)
+4. Click "Add" to create new API key
+5. Copy the generated key: `YourApiKeyToken`
+
+💡 **Free tier** provides 100,000 requests/day - sufficient for development use.
+
 ## Quick Start
 
 ```bash
@@ -56,10 +67,11 @@ Choose one provider and sign up for a free API key:
 cp .env.TOKEN.example .env
 
 # 2. Edit .env with your values:
-# WALLET_PRIVATE_KEY=0x...    # From MetaMask account details
+# WALLET_PRIVATE_KEY=0x...    # From MetaMask account details  
 # EVM_RPC_URL=https://eth-sepolia...  # From step 3 above
+# ETHERSCAN_API_KEY=YourApiKeyToken   # From step 4 above
 
-# 3. Deploy complete development stack
+# 3. Deploy complete development stack with automatic verification
 make dao-setup
 
 # 4. Copy generated environment variables to cogni-git-admin
@@ -71,6 +83,22 @@ forge test
 forge build       
 ```
 
+### Troubleshooting Verification
+
+**Common Issues:**
+- **"Could not detect deployment"**: Wait 30 seconds for Etherscan indexing, then retry
+- **"Pending in queue"**: Etherscan is processing - verification continues automatically
+- **API rate limits**: Free tier provides 100k requests/day - sufficient for development
+
+**Manual verification fallback:**
+```bash
+# If automatic verification fails, verify manually:
+forge verify-contract CONTRACT_ADDRESS src/CogniSignal.sol:CogniSignal \
+  --etherscan-api-key $ETHERSCAN_API_KEY \
+  --chain sepolia \
+  --constructor-args $(cast abi-encode "constructor(address)" $DAO_ADDRESS)
+```
+
 ### Integration Output
 
 The `make dao-setup` command generates environment variables for cogni-git-admin:
@@ -80,8 +108,8 @@ The `make dao-setup` command generates environment variables for cogni-git-admin
 
 ## Contract Details
 
-- **CogniSignal:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1` ([Verified on Sepolia](https://sepolia.etherscan.io/address/0x8f26cf7b9ca6790385e255e8ab63acc35e7b9fb1))
-- **DAO:** `0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5`
+- **CogniSignal:** `0x7115D79246D1aE2D4bF5a6D5fA626B426fE8F5cD` ([Verified on Sepolia](https://sepolia.etherscan.io/address/0x7115d79246d1ae2d4bf5a6d5fa626b426fe8f5cd))
+- **DAO:** `0xA382320be88f1c6856d3bcdeBa9Ce5C73A553cB6`
 - **Action:** `PR_APPROVE` - Approve pull requests
 
 ## Documentation

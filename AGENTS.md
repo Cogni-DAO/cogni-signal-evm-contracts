@@ -4,9 +4,9 @@
 Minimal on-chain governance events for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
 ## Status: Proof of Concept Working ✅
-- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia at `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1`
+- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia at `0x7115D79246D1aE2D4bF5a6D5fA626B426fE8F5cD`
 - **Integration:** End-to-end with cogni-git-admin functioning
-- **Deployment:** `make dao-setup` deploys complete stack
+- **Deployment:** `make dao-setup` deploys complete stack with automatic verification
 
 ## Current Limitations (POC)
 - Single wallet execution for testing (not multi-signature governance)
@@ -65,9 +65,9 @@ event CogniAction(
 ```bash
 # Setup environment
 cp .env.TOKEN.example .env
-# Edit .env with WALLET_PRIVATE_KEY and EVM_RPC_URL
+# Edit .env with WALLET_PRIVATE_KEY, EVM_RPC_URL, and ETHERSCAN_API_KEY
 
-# Deploy complete stack
+# Deploy complete stack with automatic verification
 make dao-setup
 
 # Copy generated environment variables to cogni-git-admin
