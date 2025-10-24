@@ -6,15 +6,26 @@ import {CogniSignal} from "../src/CogniSignal.sol";
 
 contract Deploy is Script {
     function run() external returns (CogniSignal) {
+        return _deploy(false); // Default: handle broadcast internally
+    }
+    
+    function runWithoutBroadcast() external returns (CogniSignal) {
+        return _deploy(true); // Skip broadcast - caller handles it
+    }
+    
+    function _deploy(bool skipBroadcast) internal returns (CogniSignal) {
         address dao = vm.envAddress("DAO_ADDRESS");
         require(dao != address(0), "DAO_ADDRESS not set");
-        require(dao != msg.sender, "DAO should not be deployer address");
         
-        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
+        if (!skipBroadcast) {
+            vm.startBroadcast(uint256(vm.envBytes32("WALLET_PRIVATE_KEY")));
+        }
         
         CogniSignal signal = new CogniSignal(dao);
         
-        vm.stopBroadcast();
+        if (!skipBroadcast) {
+            vm.stopBroadcast();
+        }
         
         console2.log("=== Deployment Complete ===");
         console2.log("CogniSignal deployed to:", address(signal));

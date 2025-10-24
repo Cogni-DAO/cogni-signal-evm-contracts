@@ -3,8 +3,9 @@ cache/
 out/
 
 # Ignores development broadcast logs
-!/broadcast
-/broadcast/*/31337/
+/broadcast
+/broadcast/**/31337/
+/broadcast/**/11155111/  # Sepolia testnet
 /broadcast/**/dry-run/
 
 # Docs
@@ -12,3 +13,7 @@ docs/
 
 # Dotenv file
 .env
+.env.*
+
+# Dependencies (use forge install, don't commit)
+lib/osx

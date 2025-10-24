@@ -3,11 +3,15 @@
 ## Overview
 Minimal on-chain governance events for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
-## Status: MVP Complete ✅
-- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia  
-- **Address:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1`
-- **Tests:** Unit + E2E tests passing (`forge test`)
-- **Integration:** Working with cogni-git-admin via Alchemy webhooks
+## Status: Proof of Concept Working ✅
+- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia at `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1`
+- **Integration:** End-to-end with cogni-git-admin functioning
+- **Deployment:** `make dao-setup` deploys complete stack
+
+## Current Limitations (POC)
+- Single wallet execution for testing (not multi-signature governance)
+- Requires careful configuration and setup
+- Not production-ready without proper permission management
 
 ## Architecture
 ```
@@ -49,15 +53,25 @@ event CogniAction(
 - Event-only contract (no state changes)
 - Verified on Etherscan for transparency
 
+## Quick Start
+
+```bash
+# Setup environment
+cp .env.TOKEN.example .env
+# Edit .env with WALLET_PRIVATE_KEY and EVM_RPC_URL
+
+# Deploy complete stack
+make dao-setup
+
+# Copy generated environment variables to cogni-git-admin
+```
+
+See `README.md` for detailed setup instructions.
+
 ## Testing
 ```bash
-forge test           # All tests (unit + e2e)
+forge test           # All tests
 forge test --match-path test/unit/    # Unit tests only
 forge test --match-path test/e2e/     # E2E tests only  
 ```
 
-## Development Rules
-- Keep minimal - events only, no state
-- 100% test coverage for access control
-- All events must be validated in tests
-- E2E tests use real DAO address with forks

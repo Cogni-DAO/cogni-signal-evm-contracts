@@ -31,7 +31,7 @@ contract CogniSignalForkE2E is Test {
     );
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("RPC_URL"));
+        vm.createSelectFork(vm.envString("EVM_RPC_URL"));
         sig = new CogniSignal(DAO);
     }
 

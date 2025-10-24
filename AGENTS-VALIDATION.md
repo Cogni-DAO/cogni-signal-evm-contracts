@@ -5,9 +5,9 @@ How to validate Solidity contracts before deployment.
 ## Environment Setup
 ```bash
 # Required in .env
-RPC_URL=https://eth-sepolia.g.alchemy.com/v2/...
+EVM_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/...
 DAO_ADDRESS=0x...
-PRIVATE_KEY=0x...
+WALLET_PRIVATE_KEY=0x...
 ```
 
 ## Validation Commands
@@ -18,17 +18,17 @@ forge build
 forge test
 
 # 2. Dry run deployment 
-forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_URL
+forge script script/Deploy.s.sol:Deploy --rpc-url $EVM_RPC_URL
 
 # 3. Deploy and validate on testnet
-forge script script/Deploy.s.sol:Deploy --rpc-url $RPC_URL --broadcast
+forge script script/Deploy.s.sol:Deploy --rpc-url $EVM_RPC_URL --broadcast
 ```
 
 ## Manual Testing with Anvil
 
 ```bash
 # Start local fork
-anvil --fork-url $RPC_URL --chain-id 31337
+anvil --fork-url $EVM_RPC_URL --chain-id 31337
 
 # Deploy to local fork
 forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --broadcast
