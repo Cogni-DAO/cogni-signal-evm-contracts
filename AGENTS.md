@@ -21,6 +21,7 @@ DAO → signal() → CogniAction event → Alchemy webhook → cogni-git-admin �
 ## Contract Interface
 ```solidity
 function signal(
+    string calldata vcs,       // "github" | "gitlab" | (future: "radicle" | "gerrit" | ... ) 
     string calldata repoUrl,   // Full VCS URL (github/gitlab/selfhosted)
     string calldata action,    // e.g. "merge", "grant", "revoke"
     string calldata target,    // e.g. "change", "collaborator", "branch"
@@ -34,6 +35,7 @@ function signal(
 event CogniAction(
     address indexed dao,       // Fixed DAO address
     uint256 indexed chainId,   // Auto-generated
+    string  vcs,               // VCS provider type
     string  repoUrl,           // Full VCS URL
     string  action,            // Action type
     string  target,            // Action target  

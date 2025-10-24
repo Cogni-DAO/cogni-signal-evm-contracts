@@ -13,7 +13,8 @@ Generic VCS governance contract that emits `CogniAction` events for multi-provid
 ### Function
 ```solidity
 function signal(
-    string calldata repoUrl,   // Full VCS URL (github/gitlab/selfhosted)
+    string calldata vcs,       // "github" | "gitlab" (future: "gerrit" | "radicle")
+    string calldata repoUrl,   // Full VCS URL
     string calldata action,    // e.g. "merge", "grant", "revoke"
     string calldata target,    // e.g. "change", "collaborator", "branch"
     string calldata resource,  // e.g. "42" (PR number) or "alice" (username)
@@ -22,9 +23,9 @@ function signal(
 ```
 
 ### VCS Provider Mapping
-- **GitHub**: `repoUrl="https://github.com/owner/repo"`, `resource="{PR number}"`
-- **GitLab**: `repoUrl="https://gitlab.com/owner/repo"`, `resource="{MR IID}"`
-- **Self-hosted**: `repoUrl="https://git.company.com/owner/repo"`, `resource="{patch ID}"`
+- **GitHub**: `vcs="github"`, `repoUrl="https://github.com/owner/repo"`, `resource="{PR number}"`
+- **GitLab**: `vcs="gitlab"`, `repoUrl="https://gitlab.com/owner/repo"`, `resource="{MR IID}"`
+- **Future**: `vcs="gerrit"`, `vcs="radicle"` for additional VCS providers
 
 ### Security
 - Only the DAO address (set at deployment) can call `signal()`

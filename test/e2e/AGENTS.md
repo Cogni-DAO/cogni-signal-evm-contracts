@@ -21,7 +21,7 @@ contract MyContractE2E is Test {
 ```solidity
 function test_DirectDAOCall() public {
     vm.prank(DAO);
-    myContract.signal("https://github.com/owner/repo", "merge", "change", "42", "");
+    myContract.signal("github", "https://github.com/owner/repo", "merge", "change", "42", "");
 }
 ```
 
@@ -33,8 +33,8 @@ function test_DAOGovernanceExecution() public {
         to: address(myContract),
         value: 0,
         data: abi.encodeWithSignature(
-            "signal(string,string,string,string,bytes)",
-            "https://github.com/owner/repo", "merge", "change", "42",
+            "signal(string,string,string,string,string,bytes)",
+            "github", "https://github.com/owner/repo", "merge", "change", "42",
             abi.encode(uint256(1), uint64(1234567890), string('{"merge_method":"merge"}'))
         )
     });
@@ -50,13 +50,13 @@ function test_DAOGovernanceExecution() public {
 ### Multi-VCS Test Examples
 ```solidity
 // GitHub PR merge
-signal("https://github.com/owner/repo", "merge", "change", "42", extra);
+signal("github", "https://github.com/owner/repo", "merge", "change", "42", extra);
 
 // GitLab collaborator management  
-signal("https://gitlab.com/owner/repo", "grant", "collaborator", "alice", extra);
+signal("gitlab", "https://gitlab.com/owner/repo", "grant", "collaborator", "alice", extra);
 
-// Self-hosted Git operations
-signal("https://git.company.com/owner/repo", "revoke", "collaborator", "bob", extra);
+// Future VCS providers
+// signal("gerrit", "https://gerrit.company.com/owner/repo", "merge", "change", "123", extra);
 ```
 
 ## Key Rules

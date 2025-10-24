@@ -6,9 +6,10 @@ contract CogniSignal {
     event CogniAction(
         address indexed dao,
         uint256 indexed chainId,
+        string  vcs,       // "github" | "gitlab" | "radicle"
         string  repoUrl,   // full VCS URL (github/gitlab/selfhosted)
         string  action,    // e.g. "merge", "grant", "revoke"
-        string  target,    // e.g. "pr", "collaborator", "branch"
+        string  target,    // e.g. "change", "collaborator", "branch"
         string  resource,  // e.g. "42" (PR number) or "alice" (username)
         bytes   extra,     // abi.encode(nonce, deadline, paramsJson UTF-8)
         address indexed executor
@@ -26,13 +27,13 @@ contract CogniSignal {
     }
 
     function signal(
+        string calldata vcs,
         string calldata repoUrl,
         string calldata action,
         string calldata target,
         string calldata resource,
         bytes  calldata extra
     ) external onlyDAO {
-        uint256 id; assembly { id := chainid() }
-        emit CogniAction(DAO, id, repoUrl, action, target, resource, extra, msg.sender);
+        emit CogniAction(DAO, block.chainid, vcs, repoUrl, action, target, resource, extra, msg.sender);
     }
 }

@@ -13,6 +13,7 @@ contract CogniSignalTest is Test {
     event CogniAction(
         address indexed dao,
         uint256 indexed chainId,
+        string  vcs,
         string  repoUrl,
         string  action,
         string  target,
@@ -30,6 +31,7 @@ contract CogniSignalTest is Test {
     }
 
     function test_Signal_Success() public {
+        string memory vcs = "github";
         string memory repoUrl = "https://github.com/Cogni-DAO/test-repo";
         string memory action = "merge";
         string memory target = "change";
@@ -39,19 +41,20 @@ contract CogniSignalTest is Test {
         vm.prank(DAO);
         
         vm.expectEmit(true, true, true, true);
-        emit CogniAction(DAO, block.chainid, repoUrl, action, target, resource, extra, DAO);
+        emit CogniAction(DAO, block.chainid, vcs, repoUrl, action, target, resource, extra, DAO);
         
-        signal.signal(repoUrl, action, target, resource, extra);
+        signal.signal(vcs, repoUrl, action, target, resource, extra);
     }
 
     function test_Signal_RevertWhen_NotDAO() public {
         vm.prank(NOT_DAO);
         vm.expectRevert("NOT_DAO");
-        signal.signal("repo", "action", "target", "resource", "");
+        signal.signal("vcs", "repo", "action", "target", "resource", "");
     }
 
     function test_Signal_EventFields() public {
-        string memory repoUrl = "https://github.com/Cogni-DAO/test-repo";
+        string memory vcs = "gitlab";
+        string memory repoUrl = "https://gitlab.com/Cogni-DAO/test-repo";
         string memory action = "grant";
         string memory target = "collaborator";
         string memory resource = "alice";
@@ -63,12 +66,12 @@ contract CogniSignalTest is Test {
         vm.prank(DAO);
         
         vm.recordLogs();
-        signal.signal(repoUrl, action, target, resource, extra);
+        signal.signal(vcs, repoUrl, action, target, resource, extra);
         
         Vm.Log[] memory logs = vm.getRecordedLogs();
         assertEq(logs.length, 1);
         assertEq(logs[0].topics.length, 4);
-        assertEq(logs[0].topics[0], keccak256("CogniAction(address,uint256,string,string,string,string,bytes,address)"));
+        assertEq(logs[0].topics[0], keccak256("CogniAction(address,uint256,string,string,string,string,string,bytes,address)"));
         assertEq(logs[0].topics[1], bytes32(uint256(uint160(DAO))));
         assertEq(logs[0].topics[2], bytes32(block.chainid));
         assertEq(logs[0].topics[3], bytes32(uint256(uint160(DAO))));
@@ -77,13 +80,14 @@ contract CogniSignalTest is Test {
     function test_Signal_MultipleActions() public {
         vm.startPrank(DAO);
         
-        signal.signal("https://github.com/Cogni-DAO/repo1", "merge", "change", "1", "");
-        signal.signal("https://github.com/Cogni-DAO/repo2", "grant", "collaborator", "alice", "");
+        signal.signal("github", "https://github.com/Cogni-DAO/repo1", "merge", "change", "1", "");
+        signal.signal("gitlab", "https://gitlab.com/Cogni-DAO/repo2", "grant", "collaborator", "alice", "");
         
         vm.stopPrank();
     }
 
     function testFuzz_Signal_Parameters(
+        string memory vcs,
         string memory repoUrl,
         string memory action,
         string memory target,
@@ -93,9 +97,9 @@ contract CogniSignalTest is Test {
         vm.prank(DAO);
         
         vm.expectEmit(true, true, true, true);
-        emit CogniAction(DAO, block.chainid, repoUrl, action, target, resource, extra, DAO);
+        emit CogniAction(DAO, block.chainid, vcs, repoUrl, action, target, resource, extra, DAO);
         
-        signal.signal(repoUrl, action, target, resource, extra);
+        signal.signal(vcs, repoUrl, action, target, resource, extra);
     }
 
     function test_ExtraData_Encoding() public view {

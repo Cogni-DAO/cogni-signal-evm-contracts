@@ -59,7 +59,7 @@ make deploy-contract  # Deploy and verify
 **Latest Deployment (Generic Schema):**
 - Sepolia: `0x2762C0875D23784aEF5bABe670f22f98B9248180` (Verified ✅)
 - DAO: `0xd81dAa2433cB8fBf8282B83b52bfb65C6043c62C`
-- ABI: `signal(string,string,string,string,bytes)` + `CogniAction(address,uint256,string,string,string,string,bytes,address)` event
+- ABI: `signal(string,string,string,string,string,bytes)` + `CogniAction(address,uint256,string,string,string,string,string,bytes,address)` event
 
 **Legacy Deployment (GitHub-only):**
 - Sepolia: `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1` (Verified)

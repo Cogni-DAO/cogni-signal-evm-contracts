@@ -11,6 +11,7 @@ contract CogniSignalTest is Test {
     event CogniAction(
         address indexed dao,
         uint256 indexed chainId,
+        string  vcs,
         string  repoUrl,
         string  action,
         string  target,
@@ -38,30 +39,31 @@ function test_Constructor() public view {
 ```solidity
 function test_Signal_Success() public {
     vm.prank(DAO);
-    signal.signal("https://github.com/owner/repo", "merge", "change", "42", "");
+    signal.signal("github", "https://github.com/owner/repo", "merge", "change", "42", "");
 }
 
 function test_Signal_RevertWhen_NotDAO() public {
     vm.prank(address(0x456));
     vm.expectRevert("NOT_DAO");
-    signal.signal("repo", "action", "target", "resource", "");
+    signal.signal("vcs", "repo", "action", "target", "resource", "");
 }
 ```
 
 ### Events
 ```solidity
 function test_Signal_EventFields() public {
-    string memory repoUrl = "https://github.com/Cogni-DAO/test-repo";
+    string memory vcs = "gitlab";
+    string memory repoUrl = "https://gitlab.com/Cogni-DAO/test-repo";
     string memory action = "grant";
     string memory target = "collaborator";
     string memory resource = "alice";
     bytes memory extra = abi.encode(1, block.timestamp + 1 hours, '{"permission": "admin"}');
 
     vm.expectEmit(true, true, true, true, address(signal));
-    emit CogniAction(DAO, block.chainid, repoUrl, action, target, resource, extra, DAO);
+    emit CogniAction(DAO, block.chainid, vcs, repoUrl, action, target, resource, extra, DAO);
     
     vm.prank(DAO);
-    signal.signal(repoUrl, action, target, resource, extra);
+    signal.signal(vcs, repoUrl, action, target, resource, extra);
 }
 ```
 
@@ -71,9 +73,9 @@ function test_MultipleActions() public {
     vm.startPrank(DAO);
     
     // GitHub PR merge
-    signal.signal("https://github.com/owner/repo1", "merge", "change", "1", "");
+    signal.signal("github", "https://github.com/owner/repo1", "merge", "change", "1", "");
     // GitLab collaborator grant
-    signal.signal("https://gitlab.com/owner/repo2", "grant", "collaborator", "alice", "");
+    signal.signal("gitlab", "https://gitlab.com/owner/repo2", "grant", "collaborator", "alice", "");
     
     vm.stopPrank();
 }

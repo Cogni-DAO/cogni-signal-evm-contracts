@@ -21,6 +21,7 @@ contract CogniSignalForkE2E is Test {
     event CogniAction(
         address indexed dao,
         uint256 indexed chainId,
+        string  vcs,
         string  repoUrl,
         string  action,
         string  target,
@@ -40,7 +41,8 @@ contract CogniSignalForkE2E is Test {
             to: address(sig),
             value: 0,
             data: abi.encodeWithSignature(
-                "signal(string,string,string,string,bytes)",
+                "signal(string,string,string,string,string,bytes)",
+                "github",
                 "https://github.com/Cogni-DAO/test-repo",
                 "merge",
                 "change",
@@ -53,6 +55,7 @@ contract CogniSignalForkE2E is Test {
         emit CogniAction(
             DAO,
             block.chainid,
+            "github",
             "https://github.com/Cogni-DAO/test-repo",
             "merge",
             "change",
@@ -69,6 +72,7 @@ contract CogniSignalForkE2E is Test {
             vm.stopPrank();
             vm.prank(DAO);
             sig.signal(
+                "github",
                 "https://github.com/Cogni-DAO/test-repo",
                 "merge", 
                 "change",
@@ -80,22 +84,23 @@ contract CogniSignalForkE2E is Test {
     }
 
     function test_direct_signal_call() public {
-        string memory repoUrl = "https://github.com/Cogni-DAO/test-repo";
+        string memory vcs = "gitlab";
+        string memory repoUrl = "https://gitlab.com/Cogni-DAO/test-repo";
         string memory action = "merge";
         string memory target = "change";
         string memory resource = "112";
         bytes memory extra = abi.encode(uint256(1), uint64(4102444800), string('{"merge_method":"merge"}'));
 
         vm.expectEmit(true, true, true, true, address(sig));
-        emit CogniAction(DAO, block.chainid, repoUrl, action, target, resource, extra, DAO);
+        emit CogniAction(DAO, block.chainid, vcs, repoUrl, action, target, resource, extra, DAO);
 
         vm.prank(DAO);
-        sig.signal(repoUrl, action, target, resource, extra);
+        sig.signal(vcs, repoUrl, action, target, resource, extra);
     }
 
     function test_non_DAO_reverts() public {
         vm.prank(address(0x123)); // Not DAO
         vm.expectRevert("NOT_DAO");
-        sig.signal("repo", "action", "target", "resource", "");
+        sig.signal("vcs", "repo", "action", "target", "resource", "");
     }
 }
