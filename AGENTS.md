@@ -15,38 +15,45 @@ Minimal on-chain governance events for GitHub operations via [cogni-git-admin](h
 
 ## Architecture
 ```
-DAO → signal() → CogniAction event → Alchemy webhook → cogni-git-admin → GitHub API
+DAO → signal() → CogniAction event → Alchemy webhook → cogni-git-admin → VCS Provider APIs
 ```
 
 ## Contract Interface
 ```solidity
 function signal(
-    string calldata repo,     // "owner/repo"
-    string calldata action,   // "PR_APPROVE"  
-    string calldata target,   // "pull_request"
-    uint256 pr,               // PR number
-    bytes32 commit,           // Git commit hash
-    bytes calldata extra      // ABI-encoded: (nonce, deadline, paramsJson)
+    string calldata vcs,       // "github" | "gitlab" | (future: "radicle" | "gerrit" | ... ) 
+    string calldata repoUrl,   // Full VCS URL (github/gitlab/selfhosted)
+    string calldata action,    // e.g. "merge", "grant", "revoke"
+    string calldata target,    // e.g. "change", "collaborator", "branch"
+    string calldata resource,  // e.g. "42" (PR number) or "alice" (username)
+    bytes  calldata extra      // ABI-encoded: (nonce, deadline, paramsJson)
 ) external onlyDAO;
 ```
 
 ## Events
 ```solidity
 event CogniAction(
-    address indexed dao,      // Fixed DAO address
-    uint256 indexed chainId,  // Auto-generated
-    string repo,              // Target repository
-    string action,            // Action type
-    string target,            // Action target
-    uint256 pr,               // PR number
-    bytes32 commit,           // Git commit
-    bytes extra,              // Additional data
-    address indexed executor  // Caller (same as DAO)
+    address indexed dao,       // Fixed DAO address
+    uint256 indexed chainId,   // Auto-generated
+    string  vcs,               // VCS provider type
+    string  repoUrl,           // Full VCS URL
+    string  action,            // Action type
+    string  target,            // Action target  
+    string  resource,          // Resource identifier
+    bytes   extra,             // Additional data
+    address indexed executor   // Caller (same as DAO)
 );
 ```
 
-## Actions (MVP)
-- `PR_APPROVE` - Approve pull requests
+## Actions (Multi-VCS)
+- **Merge changes**: `action="merge"`, `target="change"`, `resource="{PR|MR|patch ID}"`
+- **Grant access**: `action="grant"`, `target="collaborator"`, `resource="{username}"`
+- **Revoke access**: `action="revoke"`, `target="collaborator"`, `resource="{username}"`
+
+## VCS Provider Support
+- **GitHub**: `repoUrl="https://github.com/owner/repo"`, `resource="{PR number}"`
+- **GitLab**: `repoUrl="https://gitlab.com/owner/repo"`, `resource="{MR IID}"`
+- **Self-hosted**: `repoUrl="https://git.company.com/owner/repo"`, `resource="{patch ID}"`
 
 ## Security
 - `onlyDAO` modifier restricts access
