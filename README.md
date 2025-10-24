@@ -58,8 +58,9 @@ cp .env.TOKEN.example .env
 # 2. Edit .env with your values:
 # WALLET_PRIVATE_KEY=0x...    # From MetaMask account details
 # EVM_RPC_URL=https://eth-sepolia...  # From step 3 above
+# ETHERSCAN_API_KEY=...       # For automatic contract verification
 
-# 3. Deploy complete development stack
+# 3. Deploy complete development stack with automatic verification
 make dao-setup
 
 # 4. Copy generated environment variables to cogni-git-admin
@@ -80,8 +81,8 @@ The `make dao-setup` command generates environment variables for cogni-git-admin
 
 ## Contract Details
 
-- **CogniSignal:** `0x8F26cF7b9ca6790385E255E8aB63acc35e7b9FB1` ([Verified on Sepolia](https://sepolia.etherscan.io/address/0x8f26cf7b9ca6790385e255e8ab63acc35e7b9fb1))
-- **DAO:** `0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5`
+- **CogniSignal:** `0x7115D79246D1aE2D4bF5a6D5fA626B426fE8F5cD` ([Verified on Sepolia](https://sepolia.etherscan.io/address/0x7115d79246d1ae2d4bf5a6d5fa626b426fe8f5cd))
+- **DAO:** `0xA382320be88f1c6856d3bcdeBa9Ce5C73A553cB6`
 - **Action:** `PR_APPROVE` - Approve pull requests
 
 ## Documentation
