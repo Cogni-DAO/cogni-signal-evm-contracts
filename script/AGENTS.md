@@ -23,8 +23,8 @@ make dao-setup  # Deploys complete stack
 
 **Required Environment:**
 - `WALLET_PRIVATE_KEY` - Funded Sepolia wallet
-- `EVM_RPC_URL` - Sepolia RPC endpoint
-- `ETHERSCAN_API_KEY` - For automatic contract verification
+- `EVM_RPC_URL` - Sepolia RPC endpoint  
+- `ETHERSCAN_API_KEY` - For automatic contract verification ([Get free API key](https://etherscan.io/apidashboard))
 
 **Optional:**
 - `GOV_PROVIDER` - Provider type (default: "aragon")
@@ -45,7 +45,15 @@ cast balance $(cast wallet address --private-key $WALLET_PRIVATE_KEY) --rpc-url 
 
 # Test RPC connectivity  
 cast block latest --rpc-url $EVM_RPC_URL
+
+# Verify Etherscan API key
+curl -s "https://api.etherscan.io/api?module=account&action=balance&address=0x0000000000000000000000000000000000000000&tag=latest&apikey=$ETHERSCAN_API_KEY" | grep -q "OK"
 ```
+
+**Verification Issues:**
+- **Indexing delays**: Wait 30 seconds, retry deployment
+- **Rate limits**: Free tier: 100k requests/day 
+- **Manual fallback**: Use `forge verify-contract` if automatic fails
 
 ## Deploy.s.sol
 

@@ -49,6 +49,17 @@ Choose one provider and sign up for a free API key:
 2. Create endpoint → "Ethereum" → "Sepolia"
 3. Copy HTTP Provider URL
 
+### 4. Get Etherscan API Key (Required for Verification)
+Contract verification ensures transparency and enables interaction through Etherscan:
+
+1. Go to [etherscan.io/register](https://etherscan.io/register)
+2. Create free account and verify email
+3. Visit [etherscan.io/apidashboard](https://etherscan.io/apidashboard)
+4. Click "Add" to create new API key
+5. Copy the generated key: `YourApiKeyToken`
+
+💡 **Free tier** provides 100,000 requests/day - sufficient for development use.
+
 ## Quick Start
 
 ```bash
@@ -56,9 +67,9 @@ Choose one provider and sign up for a free API key:
 cp .env.TOKEN.example .env
 
 # 2. Edit .env with your values:
-# WALLET_PRIVATE_KEY=0x...    # From MetaMask account details
+# WALLET_PRIVATE_KEY=0x...    # From MetaMask account details  
 # EVM_RPC_URL=https://eth-sepolia...  # From step 3 above
-# ETHERSCAN_API_KEY=...       # For automatic contract verification
+# ETHERSCAN_API_KEY=YourApiKeyToken   # From step 4 above
 
 # 3. Deploy complete development stack with automatic verification
 make dao-setup
@@ -70,6 +81,22 @@ make dao-setup
 # Run tests
 forge test        
 forge build       
+```
+
+### Troubleshooting Verification
+
+**Common Issues:**
+- **"Could not detect deployment"**: Wait 30 seconds for Etherscan indexing, then retry
+- **"Pending in queue"**: Etherscan is processing - verification continues automatically
+- **API rate limits**: Free tier provides 100k requests/day - sufficient for development
+
+**Manual verification fallback:**
+```bash
+# If automatic verification fails, verify manually:
+forge verify-contract CONTRACT_ADDRESS src/CogniSignal.sol:CogniSignal \
+  --etherscan-api-key $ETHERSCAN_API_KEY \
+  --chain sepolia \
+  --constructor-args $(cast abi-encode "constructor(address)" $DAO_ADDRESS)
 ```
 
 ### Integration Output
