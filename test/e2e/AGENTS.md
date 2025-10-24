@@ -21,7 +21,7 @@ contract MyContractE2E is Test {
 ```solidity
 function test_DirectDAOCall() public {
     vm.prank(DAO);
-    myContract.signal("repo", "action", "target", 123, bytes32(0), "");
+    myContract.signal("https://github.com/owner/repo", "merge", "change", "42", "");
 }
 ```
 
@@ -33,9 +33,9 @@ function test_DAOGovernanceExecution() public {
         to: address(myContract),
         value: 0,
         data: abi.encodeWithSignature(
-            "signal(string,string,string,uint256,bytes32,bytes)",
-            "repo", "PR_APPROVE", "target", 123, bytes32(0),
-            abi.encode(uint256(1), uint64(1234567890), string('{"schema":"cogni.action@1"}'))
+            "signal(string,string,string,string,bytes)",
+            "https://github.com/owner/repo", "merge", "change", "42",
+            abi.encode(uint256(1), uint64(1234567890), string('{"merge_method":"merge"}'))
         )
     });
 
@@ -45,6 +45,18 @@ function test_DAOGovernanceExecution() public {
     vm.prank(DAO);
     IDAO(DAO).execute(actions, 0);
 }
+```
+
+### Multi-VCS Test Examples
+```solidity
+// GitHub PR merge
+signal("https://github.com/owner/repo", "merge", "change", "42", extra);
+
+// GitLab collaborator management  
+signal("https://gitlab.com/owner/repo", "grant", "collaborator", "alice", extra);
+
+// Self-hosted Git operations
+signal("https://git.company.com/owner/repo", "revoke", "collaborator", "bob", extra);
 ```
 
 ## Key Rules

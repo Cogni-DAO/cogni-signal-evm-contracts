@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-/// @notice Minimal: only the DAO may call signal()
+/// @notice Generic VCS governance signaling: only the DAO may call signal()
 contract CogniSignal {
     event CogniAction(
         address indexed dao,
         uint256 indexed chainId,
-        string repo,
-        string action,
-        string target,
-        uint256 pr,
-        bytes32 commit, // 32-byte full SHA ok
-        bytes extra,    // abi.encode(nonce, deadline, paramsJson)
+        string  repoUrl,   // full VCS URL (github/gitlab/selfhosted)
+        string  action,    // e.g. "merge", "grant", "revoke"
+        string  target,    // e.g. "pr", "collaborator", "branch"
+        string  resource,  // e.g. "42" (PR number) or "alice" (username)
+        bytes   extra,     // abi.encode(nonce, deadline, paramsJson UTF-8)
         address indexed executor
     );
 
@@ -27,14 +26,13 @@ contract CogniSignal {
     }
 
     function signal(
-        string calldata repo,
+        string calldata repoUrl,
         string calldata action,
         string calldata target,
-        uint256 pr,
-        bytes32 commit,
-        bytes calldata extra
+        string calldata resource,
+        bytes  calldata extra
     ) external onlyDAO {
         uint256 id; assembly { id := chainid() }
-        emit CogniAction(DAO, id, repo, action, target, pr, commit, extra, msg.sender);
+        emit CogniAction(DAO, id, repoUrl, action, target, resource, extra, msg.sender);
     }
 }

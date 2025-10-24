@@ -21,12 +21,11 @@ contract CogniSignalForkE2E is Test {
     event CogniAction(
         address indexed dao,
         uint256 indexed chainId,
-        string repo,
-        string action,
-        string target,
-        uint256 pr,
-        bytes32 commit,
-        bytes extra,
+        string  repoUrl,
+        string  action,
+        string  target,
+        string  resource,
+        bytes   extra,
         address indexed executor
     );
 
@@ -41,13 +40,12 @@ contract CogniSignalForkE2E is Test {
             to: address(sig),
             value: 0,
             data: abi.encodeWithSignature(
-                "signal(string,string,string,uint256,bytes32,bytes)",
-                "Cogni-DAO/cogni-git-review",
-                "PR_APPROVE",
-                "pull_request",
-                112,
-                bytes32(uint256(0xdead)),
-                abi.encode(uint256(1), uint64(4102444800), string('{"schema":"cogni.action@1"}'))
+                "signal(string,string,string,string,bytes)",
+                "https://github.com/Cogni-DAO/test-repo",
+                "merge",
+                "change",
+                "112",
+                abi.encode(uint256(1), uint64(4102444800), string('{"merge_method":"merge"}'))
             )
         });
 
@@ -55,12 +53,11 @@ contract CogniSignalForkE2E is Test {
         emit CogniAction(
             DAO,
             block.chainid,
-            "Cogni-DAO/cogni-git-review",
-            "PR_APPROVE",
-            "pull_request",
-            112,
-            bytes32(uint256(0xdead)),
-            abi.encode(uint256(1), uint64(4102444800), string('{"schema":"cogni.action@1"}')),
+            "https://github.com/Cogni-DAO/test-repo",
+            "merge",
+            "change",
+            "112",
+            abi.encode(uint256(1), uint64(4102444800), string('{"merge_method":"merge"}')),
             DAO
         );
 
@@ -72,35 +69,33 @@ contract CogniSignalForkE2E is Test {
             vm.stopPrank();
             vm.prank(DAO);
             sig.signal(
-                "Cogni-DAO/cogni-git-review",
-                "PR_APPROVE", 
-                "pull_request",
-                112,
-                bytes32(uint256(0xdead)),
-                abi.encode(uint256(1), uint64(4102444800), string('{"schema":"cogni.action@1"}'))
+                "https://github.com/Cogni-DAO/test-repo",
+                "merge", 
+                "change",
+                "112",
+                abi.encode(uint256(1), uint64(4102444800), string('{"merge_method":"merge"}'))
             );
         }
         vm.stopPrank();
     }
 
     function test_direct_signal_call() public {
-        string memory repo = "Cogni-DAO/cogni-git-review";
-        string memory action = "PR_APPROVE";
-        string memory target = "pull_request";
-        uint256 pr = 112;
-        bytes32 commit = bytes32(uint256(0xdead));
-        bytes memory extra = abi.encode(uint256(1), uint64(4102444800), string('{"schema":"cogni.action@1"}'));
+        string memory repoUrl = "https://github.com/Cogni-DAO/test-repo";
+        string memory action = "merge";
+        string memory target = "change";
+        string memory resource = "112";
+        bytes memory extra = abi.encode(uint256(1), uint64(4102444800), string('{"merge_method":"merge"}'));
 
         vm.expectEmit(true, true, true, true, address(sig));
-        emit CogniAction(DAO, block.chainid, repo, action, target, pr, commit, extra, DAO);
+        emit CogniAction(DAO, block.chainid, repoUrl, action, target, resource, extra, DAO);
 
         vm.prank(DAO);
-        sig.signal(repo, action, target, pr, commit, extra);
+        sig.signal(repoUrl, action, target, resource, extra);
     }
 
     function test_non_DAO_reverts() public {
         vm.prank(address(0x123)); // Not DAO
         vm.expectRevert("NOT_DAO");
-        sig.signal("repo", "action", "target", 0, bytes32(0), "");
+        sig.signal("repo", "action", "target", "resource", "");
     }
 }
