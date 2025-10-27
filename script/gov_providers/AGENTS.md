@@ -2,18 +2,17 @@
 
 Modular governance provider system enabling CogniSignal to work with any DAO framework while maintaining a stable, governance-agnostic ABI.
 
-## Directory Contents
+## Directory Structure
 
 **IGovProvider.sol** - Standard interface for all governance providers  
 **GovProviderFactory.sol** - Provider selection and instantiation logic  
-**AragonOSxProvider.sol** - Production Aragon OSx DAO deployment  
-**SimpleDaoProvider.sol** - Lightweight development DAO fallback  
-**AragonInterfaces.sol** - Aragon OSx contract interfaces and addresses
+**Aragon/** - Production Aragon OSx DAO deployment (tested, working)  
+**SimpleDao/** - Lightweight development DAO fallback (untested)
 
 ## Provider Selection
 
-- **ARAGON** (default): Aragon OSx deployment
-- **SIMPLE**: SimpleDAO deployment
+- **ARAGON** (default): Aragon OSx deployment (working)
+- **SIMPLE**: SimpleDAO deployment (untested)
 
 Configure via `GOV_PROVIDER` environment variable.
 

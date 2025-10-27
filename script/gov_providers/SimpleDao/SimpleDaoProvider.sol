@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {IGovProvider} from "./IGovProvider.sol";
+import {IGovProvider} from "../IGovProvider.sol";
 
 /**
  * @title Simple DAO Provider
