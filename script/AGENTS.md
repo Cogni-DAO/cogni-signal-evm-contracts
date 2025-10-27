@@ -11,8 +11,8 @@ Deploys complete governance stack with modular provider system.
 4. **CogniSignal** - Event aggregation contract
 
 ### Provider System
-- `GOV_PROVIDER=aragon` (default) - Aragon OSx with admin plugin
-- `GOV_PROVIDER=simple` - Lightweight SimpleDAO fallback
+- `GOV_PROVIDER=aragon` (default) - Aragon OSx with admin plugin (working)
+- `GOV_PROVIDER=simple` - Lightweight SimpleDAO fallback (untested)
 
 See `script/gov_providers/AGENTS.md` for provider details.
 
