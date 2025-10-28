@@ -43,88 +43,125 @@ Deploys production-ready Aragon OSx DAO with Token Voting Plugin for token-based
 
 ## Critical Debugging Information
 
-### TokenVotingSetup Parameter Structure
+### Current Issue: minDuration Encoding Bug
 
-**CRITICAL**: The `TokenVotingSetup::prepareInstallation()` function expects exactly 3 struct parameters:
+**PROBLEM**: TokenVotingSetup reverts because minDuration appears as 0xE1 (225s) in calldata instead of 0xE10 (3600s)  
+**CONSTRAINT**: Aragon requires minDuration >= 3600 seconds (1 hour minimum)  
+**STATUS**: Struct encoding issue, NOT parameter count or missing fields
 
-1. **VotingSettings struct** (5 fields):
+### Parameter Structure (3 Structs Required)
+
+**TokenVotingSetup::prepareInstallation()** expects exactly 3 struct parameters:
+
+1. **VotingSettings** (from MajorityVotingBase.sol):
    ```solidity
    struct VotingSettings {
-       VotingMode votingMode;        // enum (0=Standard, 1=EarlyExecution, 2=VoteReplacement)
-       uint32 supportThreshold;      // e.g., 500000 (50%)
-       uint32 minParticipation;      // e.g., 500000 (50%)
-       uint64 minDuration;           // minimum 3600 seconds
-       uint256 minProposerVotingPower; // e.g., 1
+       VotingMode votingMode;        // 0=Standard, 1=EarlyExecution, 2=VoteReplacement  
+       uint32 supportThreshold;      // 500000 = 50%
+       uint32 minParticipation;      // 500000 = 50%
+       uint64 minDuration;           // >=3600 seconds (CRITICAL: must encode as 0xE10)
+       uint256 minProposerVotingPower; // 1e18 for 18-decimal tokens
    }
    ```
 
-2. **TokenSettings struct** (3 fields):
+2. **TokenSettings** (from TokenVotingSetup.sol):
    ```solidity
    struct TokenSettings {
-       address addr;     // existing token address (use address(0) for new token)
+       address addr;     // address(0) = deploy new GovernanceERC20
        string name;      // token name
        string symbol;    // token symbol
-       // NOTE: NO decimals field - this was a key debugging discovery
    }
    ```
 
-3. **MintSettings struct** (2 arrays):
+3. **MintSettings** (from GovernanceERC20.sol):
    ```solidity
    struct MintSettings {
-       address[] receivers;  // array of addresses to receive tokens
-       uint256[] amounts;    // corresponding amounts for each receiver
+       address[] receivers;          // token recipients
+       uint256[] amounts;            // amounts in wei (1e18 for 1 token)
+       bool ensureDelegationOnMint;  // true for voting power
    }
    ```
 
-### Parameter Encoding Pattern
+### Debugging Workflow
 
-**CORRECT**:
-```solidity
-bytes memory tokenVotingData = abi.encode(
-    votingSettings,    // Complete VotingSettings struct
-    tokenSettings,     // Complete TokenSettings struct  
-    mintSettings       // Complete MintSettings struct
-);
+**Step 1: Verify Encoding**
+```bash
+# Check that uint64(3600) encodes as 0xE10 not 0xE1
+cast abi-encode "uint64" 3600
+# Expected: 0x0000000000000e10
 ```
 
-**INCORRECT** (causes empty revert data):
-```solidity
-bytes memory tokenVotingData = abi.encode(
-    uint8(0), uint32(600000), uint32(500000), uint64(3600), uint256(1), // Individual fields
-    address(0), config.tokenName, config.tokenSymbol,                    // Individual fields
-    receivers, amounts                                                    // Arrays
-);
+**Step 2: Decode Calldata**
+```bash
+# Decode your actual calldata to see field values
+cast abi-decode "(uint8,uint32,uint32,uint64,uint256),(address,string,string),(address[],uint256[],bool)" <hex_data>
 ```
+
+**Step 3: Check Struct Alignment**
+- Import official structs: `import {VotingSettings} from "token-voting-plugin/src/base/MajorityVotingBase.sol"`
+- Never redefine structs locally
+- Verify field order matches official source exactly
+
+**Step 4: Test Without Gas**
+```bash
+# Fork testnet for zero-cost debugging
+cast call --rpc-url $RPC_URL $TOKEN_VOTING_SETUP "prepareInstallation(address,bytes)" $DAO_ADDRESS $ENCODED_DATA
+```
+
+## Web3 Development Patterns
+
+### Dependency Management
+- **Version Compatibility**: Aragon OSx requires OpenZeppelin v4.9.5, not v5.x
+- **Remapping Debug**: Use `forge build --dry-run` to verify imports resolve correctly
+- **Nested Dependencies**: Check lib/ subdirectories for version conflicts
+
+### Struct Compatibility 
+- **Import Official Types**: Always use source contracts, never local definitions
+- **ABI Verification**: Use `cast interface <address>` to verify deployed contracts
+- **Encoding Test**: Validate `abi.encode()` output before deployment
+
+### Empty Revert Debugging
+- **Fork Networks**: Use Tenderly/Anvil for zero-cost debugging
+- **Console Logging**: Add debug logs before failure points
+- **Revert Decoding**: Use `cast` to decode revert data patterns
+
+### Parameter Validation
+- **Constraint Checking**: Verify minDuration >= 3600, token amounts in wei
+- **Type Casting**: Use explicit uint64(3600) to prevent truncation
+- **Field Alignment**: Check that struct fields encode to expected hex values
 
 ## Resource Discovery Links
 
-### Official Aragon Documentation
-- **Token Voting Plugin**: https://devs.aragon.org/docs/token-voting-plugin
-- **Plugin Development**: https://devs.aragon.org/docs/how-to-guides/plugin-development
-- **OSx SDK**: https://devs.aragon.org/docs/sdk
+### When to Use Each Resource
 
-### Contract Artifacts & Source Code
-- **NPM Package**: `@aragon/token-voting-plugin-artifacts`
-- **Repository**: https://github.com/aragon/token-voting-plugin
-- **Sepolia Deployment**: https://sepolia.etherscan.io/address/0x424F4cA6FA9c24C03f2396DF0E96057eD11CF7dF
+**For Struct Definitions & Constraints**:
+- **Token Voting API Docs**: https://docs.aragon.org/token-voting/1.x/index.html → Use for minDuration limits (≥1 hour)
+- **MajorityVotingBase.sol**: https://github.com/aragon/token-voting-plugin/blob/main/src/base/MajorityVotingBase.sol → Use for VotingSettings field order
+- **TokenVotingSetup.sol**: https://github.com/aragon/token-voting-plugin/blob/main/src/TokenVotingSetup.sol → Use for parameter structure
+- **GovernanceERC20.sol**: https://github.com/aragon/token-voting-plugin/blob/main/src/erc20/GovernanceERC20.sol → Use for MintSettings
 
-### Debugging Tools
-- **TokenVotingABI.json**: Generated ABI file in repo root contains struct definitions
-- **Cast decode**: `cast abi-decode "prepareInstallation(address,(uint8,address))" <revert_data>`
-- **Tenderly**: Fork Sepolia to debug contract calls without gas costs
+**For Debugging Failed Installations**:
+- **Plugin Installation Guide**: https://ethereum.stackexchange.com/questions/147798/how-do-i-install-my-custom-plugin-into-an-aragon-dao → Use when plugin setup fails
+- **OSx Plugin Development**: https://devs.aragon.org/docs/how-to-guides/plugin-development → Use for setup troubleshooting
 
-### Key Debugging Commands
+**For Contract Verification**:
+- **Sepolia Token Voting Repo**: https://sepolia.etherscan.io/address/0x424F4cA6FA9c24C03f2396DF0E96057eD11CF7dF → Use to verify deployment addresses
+- **NPM Artifacts**: `@aragon/token-voting-plugin-artifacts` → Use for ABI verification
+
+### Essential Debugging Commands
 
 ```bash
-# Find plugin repository address
-npm install @aragon/token-voting-plugin-artifacts
-node -e "console.log(require('@aragon/token-voting-plugin-artifacts').addresses.pluginRepo.sepolia)"
+# Verify uint64 encoding (should be 0x0000000000000e10 for 3600)
+cast abi-encode "uint64" 3600
 
-# Get TokenVotingSetup ABI
-cast interface 0x424F4cA6FA9c24C03f2396DF0E96057eD11CF7dF --etherscan-api-key $ETHERSCAN_API_KEY
+# Get plugin setup ABI for parameter debugging  
+cast interface 0x7870837ffe670E62d4e601393D454f1b8649F7f9 --rpc-url $EVM_RPC_URL
 
-# Debug failed transactions
-cast call $TOKEN_VOTING_SETUP "prepareInstallation(address,(uint8,address))" $DAO_ADDRESS $ENCODED_DATA --rpc-url $EVM_RPC_URL
+# Test parameter encoding without deployment
+cast call $TOKEN_VOTING_SETUP "prepareInstallation(address,bytes)" $DAO_ADDR $DATA --rpc-url $EVM_RPC_URL
+
+# Decode actual calldata to verify field values
+cast abi-decode "(uint8,uint32,uint32,uint64,uint256),(address,string,string),(address[],uint256[],bool)" <your_hex_data>
 ```
 
 ## Environment Variable Changes

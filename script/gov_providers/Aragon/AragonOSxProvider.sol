@@ -159,9 +159,48 @@ contract AragonOSxProvider is IGovProvider, Script {
             data: tokenVotingData
         });
         
-        // Create DAO with Token Voting Plugin
+        // Create DAO with Token Voting Plugin - with comprehensive error capture
         IDAOFactory.InstalledPlugin[] memory installedPlugins;
-        (dao, installedPlugins) = IDAOFactory(daoFactory).createDao(daoSettings, pluginSettings);
+        
+        console2.log("  DEBUG: About to call DAOFactory.createDao");
+        console2.log("  DEBUG: DAOFactory address:", daoFactory);
+        console2.log("  DEBUG: Plugin repo address:", tokenVotingRepo);
+        console2.log("  DEBUG: Plugin settings length:", pluginSettings.length);
+        
+        try IDAOFactory(daoFactory).createDao(daoSettings, pluginSettings) returns (
+            address createdDao, 
+            IDAOFactory.InstalledPlugin[] memory returnedPlugins
+        ) {
+            dao = createdDao;
+            installedPlugins = returnedPlugins;
+            console2.log("  DEBUG: DAO created successfully at:", dao);
+            console2.log("  DEBUG: Installed plugins count:", installedPlugins.length);
+        } catch Error(string memory reason) {
+            console2.log("  ERROR: DAOFactory.createDao failed with reason:", reason);
+            revert(string.concat("DAOFactory.createDao failed: ", reason));
+        } catch Panic(uint errorCode) {
+            console2.log("  ERROR: DAOFactory.createDao panicked with code:", errorCode);
+            revert(string.concat("DAOFactory.createDao panicked: ", vm.toString(errorCode)));
+        } catch (bytes memory lowLevelData) {
+            console2.log("  ERROR: DAOFactory.createDao failed with low-level error");
+            console2.log("  ERROR: Raw revert data length:", lowLevelData.length);
+            console2.logBytes(lowLevelData);
+            
+            // Try to decode common revert patterns
+            if (lowLevelData.length >= 4) {
+                bytes4 selector = bytes4(lowLevelData);
+                console2.log("  ERROR: Revert selector:", vm.toString(selector));
+                
+                if (selector == 0x08c379a0) { // Error(string)
+                    console2.log("  ERROR: This is an Error(string) revert");
+                    // Try to decode string if data is long enough
+                    if (lowLevelData.length > 68) {
+                        console2.log("  ERROR: Error string data present, length:", lowLevelData.length);
+                    }
+                }
+            }
+            revert("DAOFactory.createDao failed with low-level error");
+        }
         
         // Get plugin from return value
         require(installedPlugins.length > 0, "no plugins installed");
