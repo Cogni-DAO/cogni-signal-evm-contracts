@@ -8,7 +8,7 @@ pragma solidity ^0.8.13;
 interface IGovProvider {
     struct GovDeploymentResult {
         address daoAddress;           // Main DAO contract address
-        address adminPluginAddress;   // Admin plugin contract (if applicable)
+        address votingPluginAddress;  // Voting plugin contract address
         address tokenAddress;         // Governance token address
         string providerType;          // Provider identifier ("aragon", "simple", etc.)
         bytes extraData;              // Provider-specific data

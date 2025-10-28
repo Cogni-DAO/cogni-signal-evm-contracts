@@ -30,7 +30,7 @@ contract SetupDevChain is Script {
     struct DeploymentResult {
         address token;
         address dao;
-        address adminPlugin;        // Admin plugin address (if applicable)
+        address votingPlugin;       // Voting plugin address
         address cogniSignal;
         address deployer;
         uint256 chainId;
@@ -52,6 +52,7 @@ contract SetupDevChain is Script {
         string memory tokenName = vm.envOr("TOKEN_NAME", string("Cogni Governance Token"));
         string memory tokenSymbol = vm.envOr("TOKEN_SYMBOL", string("CGT"));
         uint256 tokenSupply = vm.envOr("TOKEN_SUPPLY", uint256(1000000 * 10**18)); // 1M tokens
+        address tokenInitialHolder = vm.envAddress("TOKEN_INITIAL_HOLDER");
         
         console2.log("=== Development Chain Setup (Modular Governance) ===");
         
@@ -71,7 +72,7 @@ contract SetupDevChain is Script {
             tokenSymbol: tokenSymbol,
             tokenSupply: tokenSupply,
             deployer: deployer,
-            providerSpecificConfig: bytes("")
+            providerSpecificConfig: abi.encode(tokenInitialHolder)
         });
         
         IGovProvider.GovDeploymentResult memory govResult = govProvider.deployGovernance(govConfig);
@@ -91,7 +92,7 @@ contract SetupDevChain is Script {
         result = DeploymentResult({
             token: govResult.tokenAddress,
             dao: govResult.daoAddress,
-            adminPlugin: govResult.adminPluginAddress,
+            votingPlugin: govResult.votingPluginAddress,
             cogniSignal: address(cogniSignal),
             deployer: deployer,
             chainId: block.chainid,
@@ -115,8 +116,8 @@ contract SetupDevChain is Script {
         console2.log("Governance Type:", result.govProviderType);
         console2.log("ERC20 Token:    ", result.token);
         console2.log("DAO:           ", result.dao);
-        if (result.adminPlugin != address(0)) {
-            console2.log("Admin Plugin:  ", result.adminPlugin);
+        if (result.votingPlugin != address(0)) {
+            console2.log("Voting Plugin: ", result.votingPlugin);
         }
         console2.log("CogniSignal:   ", result.cogniSignal);
         console2.log("Chain ID:      ", result.chainId);
@@ -168,16 +169,16 @@ contract SetupDevChain is Script {
             "CHAIN_ID=", vm.toString(result.chainId), "\n"
         );
         
-        // Add admin plugin if available
-        if (result.adminPlugin != address(0)) {
+        // Add voting plugin if available
+        if (result.votingPlugin != address(0)) {
             envContent = string.concat(
                 envContent,
-                "ARAGON_ADMIN_PLUGIN_CONTRACT=", vm.toString(result.adminPlugin), "\n"
+                "ARAGON_VOTING_PLUGIN_CONTRACT=", vm.toString(result.votingPlugin), "\n"
             );
         } else {
             envContent = string.concat(
                 envContent,
-                "# ARAGON_ADMIN_PLUGIN_CONTRACT=  # Not applicable for ", result.govProviderType, "\n"
+                "# ARAGON_VOTING_PLUGIN_CONTRACT=  # Not applicable for ", result.govProviderType, "\n"
             );
         }
         

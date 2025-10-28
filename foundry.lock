@@ -7,14 +7,26 @@
   },
   "lib/openzeppelin-contracts": {
     "tag": {
-      "name": "v5.0.2",
-      "rev": "dbb6104ce834628e473d2173bbc9d47f81a9eec3"
+      "name": "v4.9.5",
+      "rev": "bd325d56b4c62c9c5c1aff048c37c6bb18ac0290"
+    }
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "tag": {
+      "name": "v4.9.5",
+      "rev": "a40cb0bda838c2ef3dfc252c179f5c37c32e80c4"
     }
   },
   "lib/osx": {
     "tag": {
       "name": "v1.4.5",
       "rev": "ee4b3e4dbb3e6972fc1ce35c6864bfc8c2166b3d"
+    }
+  },
+  "lib/token-voting-plugin": {
+    "tag": {
+      "name": "v1.4.1",
+      "rev": "6cdbe8e825e414c13a4278c5000537911116a7c8"
     }
   }
 }

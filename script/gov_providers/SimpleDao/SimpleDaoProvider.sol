@@ -34,7 +34,7 @@ contract SimpleDaoProvider is IGovProvider, Script {
         
         result = GovDeploymentResult({
             daoAddress: address(dao),
-            adminPluginAddress: address(0), // SimpleDAO doesn't have admin plugin
+            votingPluginAddress: address(0), // SimpleDAO doesn't have voting plugin
             tokenAddress: address(token),
             providerType: "simple-dao",
             extraData: bytes("") // No extra data needed

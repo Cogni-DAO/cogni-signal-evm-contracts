@@ -12,8 +12,9 @@ dao-setup:
 	@test -n "$(WALLET_PRIVATE_KEY)" || (echo "❌ WALLET_PRIVATE_KEY not set in .env" && exit 1)
 	@test -n "$(EVM_RPC_URL)" || (echo "❌ EVM_RPC_URL not set in .env" && exit 1)
 	@test -n "$(ETHERSCAN_API_KEY)" || (echo "❌ ETHERSCAN_API_KEY not set in .env" && exit 1)
+	@test -n "$(TOKEN_INITIAL_HOLDER)" || (echo "❌ TOKEN_INITIAL_HOLDER not set in .env" && exit 1)
 	@echo "✅ Environment variables loaded from .env"
-	forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $(EVM_RPC_URL) --broadcast --verify
+	set -a && source .env && set +a && forge script script/SetupDevChain.s.sol:SetupDevChain --rpc-url $(EVM_RPC_URL) --broadcast --verify
 
 deploy-contract:
 	@echo "Deploying CogniSignal contract with existing DAO"
