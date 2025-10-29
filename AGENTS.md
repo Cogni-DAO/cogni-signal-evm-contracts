@@ -1,17 +1,13 @@
 # CogniSignal Contract System
 
 ## Overview
-Minimal on-chain governance events for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
+On-chain governance events for VCS operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
-## Status: Proof of Concept Working ✅
-- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia at `0x7115D79246D1aE2D4bF5a6D5fA626B426fE8F5cD`
-- **Integration:** End-to-end with cogni-git-admin functioning
-- **Deployment:** `make dao-setup` deploys complete stack with automatic verification
+## Deployment
+`make dao-setup` deploys governance stack with automatic verification on Sepolia.
 
-## Current Limitations (POC)
-- Single wallet execution for testing (not multi-signature governance)
-- Requires careful configuration and setup
-- Not production-ready without proper permission management
+## Architecture  
+Modular governance providers enable different DAO frameworks while maintaining stable CogniSignal interface.
 
 ## Architecture
 ```
@@ -81,4 +77,89 @@ forge test           # All tests
 forge test --match-path test/unit/    # Unit tests only
 forge test --match-path test/e2e/     # E2E tests only  
 ```
+
+## Empty Revert Data Debugging
+
+### Causes
+
+1. **Swallowing Revert Data on Low-Level Calls**
+   ```solidity
+   // BAD: Discards revert data
+   (bool success, bytes memory data) = target.call(callData);
+   require(success, "Call failed"); // Loses the actual error!
+   
+   // GOOD: Bubble revert data
+   (bool success, bytes memory data) = target.call(callData);
+   assembly {
+       if iszero(success) {
+           revert(add(data, 0x20), mload(data)) // Bubble exact bytes
+       }
+   }
+   ```
+
+2. **Proxy/Fallback Not Bubbling Returndata**
+   ```solidity
+   // BAD: Proxy swallows revert data
+   fallback() external payable {
+       (bool success,) = implementation.delegatecall(msg.data);
+       require(success, "Delegate failed"); // Lost revert data!
+   }
+   
+   // GOOD: Proxy bubbles revert data  
+   fallback() external payable {
+       (bool success, bytes memory data) = implementation.delegatecall(msg.data);
+       assembly {
+           if iszero(success) {
+               revert(add(data, 0x20), mload(data))
+           }
+           return(add(data, 0x20), mload(data))
+       }
+   }
+   ```
+
+3. **No Reason Provided**
+   ```solidity
+   // BAD: Zero revert data
+   require(condition);        // Empty revert
+   revert();                 // Empty revert
+   
+   // GOOD: Always provide context
+   require(condition, "Specific failure reason");
+   revert CustomError(param1, param2);
+   ```
+
+4. **Using transfer/send Instead of call**
+   ```solidity
+   // BAD: No revert data from failed transfers
+   payable(recipient).transfer(amount);  // Boolean failure only
+   
+   // GOOD: Use call for revert data
+   (bool success, bytes memory data) = payable(recipient).call{value: amount}("");
+   if (!success) {
+       assembly { revert(add(data, 0x20), mload(data)) }
+   }
+   ```
+
+### Practices
+
+**Custom Errors**:
+```solidity
+error NotAllowed(address who, uint256 id);
+if (!authorized) revert NotAllowed(msg.sender, tokenId);
+```
+
+**Bubble Revert Data**:
+```solidity
+Address.functionCall(target, callData);
+```
+
+### Diagnostic Checklist
+
+1. **Search for `require(success, "…")` after low-level calls** → Replace with bubbling pattern
+2. **If using proxy, verify fallback returns returndata exactly** → Add assembly bubbling  
+3. **Grep for `transfer(` or `send(`** → Replace with `call{value:}("")`
+4. **Ensure compiler ≥0.8.4 and tests decode custom errors** → Update test patterns
+5. **Add `returndatasize()` logging** → Confirm bytes exist before being dropped
+
+**Debug**: `cast call --rpc-url $RPC_URL $CONTRACT "function(params)" <args>`
 
