@@ -19,6 +19,7 @@ interface IGovProvider {
         string tokenSymbol;
         uint256 tokenSupply;
         address deployer;
+        address tokenInitialHolder;
         bytes providerSpecificConfig;
     }
     

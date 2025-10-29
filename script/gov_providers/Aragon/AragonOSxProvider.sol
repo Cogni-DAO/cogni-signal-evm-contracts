@@ -1,15 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+// Import real types directly from official plugin sources  
 import {Script, console2} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IGovProvider} from "../IGovProvider.sol";
-import {IDAOFactory, IDAO, AragonOSxAddresses} from "./AragonInterfaces.sol";
-// Import real types directly from official plugin sources  
+import {DAOFactory} from "@aragon/osx/framework/dao/DAOFactory.sol";
+import {IDAO} from "@aragon/osx-commons-contracts/src/dao/IDAO.sol";
+import {IPluginSetup} from "@aragon/osx-commons-contracts/src/plugin/setup/IPluginSetup.sol";
+import {PluginSetupRef} from "@aragon/osx/framework/plugin/setup/PluginSetupProcessorHelpers.sol";
+import {PluginRepo} from "@aragon/osx/framework/plugin/repo/PluginRepo.sol";
 import {MajorityVotingBase} from "token-voting-plugin/src/base/MajorityVotingBase.sol";
 import {TokenVotingSetup} from "token-voting-plugin/src/TokenVotingSetup.sol";
+import {TokenVoting} from "token-voting-plugin/src/TokenVoting.sol";
 import {GovernanceERC20} from "token-voting-plugin/src/erc20/GovernanceERC20.sol";
+import {IPlugin} from "@aragon/osx-commons-contracts/src/plugin/IPlugin.sol";
 
 /**
  * @title AragonOSx Provider
@@ -21,7 +28,7 @@ contract AragonOSxProvider is IGovProvider, Script {
     bytes32 constant EXECUTE = keccak256("EXECUTE_PERMISSION");
     
     constructor() {
-        // Constructor left empty - addresses are accessed via AragonOSxAddresses library
+        // Constructor left empty - addresses loaded from environment
     }
     
     function deployGovernance(GovConfig memory config) 
@@ -34,14 +41,18 @@ contract AragonOSxProvider is IGovProvider, Script {
         // Check if Aragon is available on this network
         require(isAvailable(), "AragonOSx not available on this network");
         
-        // Validate external contract addresses have code
-        address daoFactory = AragonOSxAddresses.getDaoFactory(block.chainid);
-        address psp = AragonOSxAddresses.getPluginSetupProcessor(block.chainid);
-        address tokenVotingRepo = AragonOSxAddresses.getTokenVotingPluginRepo(block.chainid);
+        // Decode Aragon addresses from provider-specific config (set by script from artifacts)
+        (address daoFactory, address psp, address tokenVotingRepo) = 
+            abi.decode(config.providerSpecificConfig, (address, address, address));
         
+        // Validate external contract addresses have code
         require(daoFactory.code.length > 0, "no code: factory");
         require(psp.code.length > 0, "no code: psp");
         require(tokenVotingRepo.code.length > 0, "no code: token voting repo");
+        
+        // Verify PSP is wired correctly in factory
+        address factoryPsp = address(DAOFactory(daoFactory).pluginSetupProcessor());
+        require(factoryPsp == psp, "factory psp mismatch");
         
         
         // Note: Token will be created by the TokenVoting plugin, not deployed here
@@ -82,138 +93,104 @@ contract AragonOSxProvider is IGovProvider, Script {
     }
     
     function getRequiredEnvVars() external pure override returns (string[] memory) {
-        string[] memory envVars = new string[](1);
+        string[] memory envVars = new string[](4);
         envVars[0] = "TOKEN_INITIAL_HOLDER";
+        envVars[1] = "ARAGON_DAO_FACTORY";
+        envVars[2] = "ARAGON_PSP";
+        envVars[3] = "ARAGON_TOKEN_VOTING_REPO";
         return envVars;
     }
     
     // ============ INTERNAL FUNCTIONS ============
     
     function _deployDAOWithTokenVotingPlugin(
-        GovConfig memory config, 
-        address daoFactory, 
+        GovConfig memory config,
+        address daoFactory,
         address tokenVotingRepo,
         address /* psp */
     ) internal returns (address dao, address tokenVotingPlugin, address governanceToken) {
-        
-        // Create DAO settings
-        IDAOFactory.DAOSettings memory daoSettings = IDAOFactory.DAOSettings({
-            trustedForwarder: address(0), // No trusted forwarder
-            daoURI: "", // Empty DAO URI
-            subdomain: "", // No ENS subdomain
-            metadata: abi.encode(
-                string(abi.encodePacked("CogniSignal DAO - ", config.tokenName))
-            )
+        DAOFactory.DAOSettings memory daoSettings = DAOFactory.DAOSettings({
+            trustedForwarder: address(0),
+            daoURI: "",
+            subdomain: "",
+            metadata: abi.encode(string(abi.encodePacked("CogniSignal DAO - ", config.tokenName)))
         });
-        
-        address initialHolder = abi.decode(config.providerSpecificConfig, (address));
-        
-        // Create mint recipients with proper token decimals (18 decimals = 1e18)
+
+        require(config.tokenInitialHolder != address(0), "zero initial holder");
+
         address[] memory receivers = new address[](1);
         uint256[] memory amounts = new uint256[](1);
-        receivers[0] = initialHolder;
-        amounts[0] = 1e18; // Use 18-decimal token amount instead of 1
-        
-        // Create VotingSettings with absolutely explicit typing to prevent truncation
+        receivers[0] = config.tokenInitialHolder;
+        amounts[0] = 1e18;
+
         MajorityVotingBase.VotingSettings memory votingSettings;
-        votingSettings.votingMode = MajorityVotingBase.VotingMode.Standard;  // 0
-        votingSettings.supportThreshold = uint32(500000);        // 500000 
-        votingSettings.minParticipation = uint32(500000);        // 500000
-        votingSettings.minDuration = uint64(3600);               // 3600 (0xe10 hex)
-        votingSettings.minProposerVotingPower = uint256(1e18);   // 1e18
-        
-        // Debug log to verify minDuration value
-        console2.log("  DEBUG: VotingSettings.minDuration =", votingSettings.minDuration);
-        
-        // Create TokenSettings struct (plugin will deploy GovernanceERC20)
+        votingSettings.votingMode = MajorityVotingBase.VotingMode.EarlyExecution;
+        votingSettings.supportThreshold = uint32(500_000);
+        votingSettings.minParticipation = uint32(500_000);
+        votingSettings.minDuration = uint64(3600);
+        votingSettings.minProposerVotingPower = uint256(1e18);
+
         TokenVotingSetup.TokenSettings memory tokenSettings = TokenVotingSetup.TokenSettings({
-            addr: address(0),                         // address(0) = deploy new GovernanceERC20
-            name: config.tokenName,                   // Token name
-            symbol: config.tokenSymbol               // Token symbol
+            addr: address(0),
+            name: config.tokenName,
+            symbol: config.tokenSymbol
         });
-        
-        // Create MintSettings struct with proper decimals (3 fields - GovernanceERC20.MintSettings)
+
         GovernanceERC20.MintSettings memory mintSettings = GovernanceERC20.MintSettings({
-            receivers: receivers,                     // Recipients of initial tokens
-            amounts: amounts,                         // Token amounts (1e18 for 18 decimals)
-            ensureDelegationOnMint: true              // Ensure delegation on mint for voting
+            receivers: receivers,
+            amounts: amounts,
+            ensureDelegationOnMint: true
         });
-        
-        // Encode the three structs as parameters for TokenVotingSetup::prepareInstallation
+
+        // Add the 4 missing parameters that TokenVotingSetup expects (7 total)
+        IPlugin.TargetConfig memory targetConfig = IPlugin.TargetConfig({
+            target: address(0), // Will be set to DAO address by plugin
+            operation: IPlugin.Operation.Call
+        });
+        uint256 minApprovals = 0; // Default minimum approvals
+        bytes memory pluginMetadata = ""; // Empty plugin metadata
+        address[] memory excludedAccounts; // Empty excluded accounts array
+
         bytes memory tokenVotingData = abi.encode(
-            votingSettings,
-            tokenSettings,
-            mintSettings
+            votingSettings,     // 1. MajorityVotingBase.VotingSettings
+            tokenSettings,      // 2. TokenSettings
+            mintSettings,       // 3. GovernanceERC20.MintSettings
+            targetConfig,       // 4. IPlugin.TargetConfig (was missing)
+            minApprovals,       // 5. uint256 (was missing)
+            pluginMetadata,     // 6. bytes (was missing)
+            excludedAccounts    // 7. address[] (was missing)
         );
-        
-        // Debug: Log the encoded data to see what's actually being sent
-        console2.log("  DEBUG: Encoded data length:", tokenVotingData.length);
-        console2.logBytes(tokenVotingData);
-        
-        IDAOFactory.PluginSettings[] memory pluginSettings = new IDAOFactory.PluginSettings[](1);
-        pluginSettings[0] = IDAOFactory.PluginSettings({
-            pluginSetupRef: IDAOFactory.PluginSetupRef({
-                versionTag: IDAOFactory.VersionTag(1, 3), // Token Voting v1.3
-                pluginSetupRepo: tokenVotingRepo
+
+        DAOFactory.PluginSettings[] memory pluginSettings = new DAOFactory.PluginSettings[](1);
+        pluginSettings[0] = DAOFactory.PluginSettings({
+            pluginSetupRef: PluginSetupRef({
+                versionTag: PluginRepo.Tag(1, 3), // v1.4 per TokenVotingSetup.sol
+                pluginSetupRepo: PluginRepo(tokenVotingRepo)
             }),
             data: tokenVotingData
         });
+
+        // Use Address.functionCall to bubble revert data verbatim
+        bytes memory callData = abi.encodeWithSelector(
+            DAOFactory.createDao.selector,
+            daoSettings,
+            pluginSettings
+        );
         
-        // Create DAO with Token Voting Plugin - with comprehensive error capture
-        IDAOFactory.InstalledPlugin[] memory installedPlugins;
-        
-        console2.log("  DEBUG: About to call DAOFactory.createDao");
-        console2.log("  DEBUG: DAOFactory address:", daoFactory);
-        console2.log("  DEBUG: Plugin repo address:", tokenVotingRepo);
-        console2.log("  DEBUG: Plugin settings length:", pluginSettings.length);
-        
-        try IDAOFactory(daoFactory).createDao(daoSettings, pluginSettings) returns (
-            address createdDao, 
-            IDAOFactory.InstalledPlugin[] memory returnedPlugins
-        ) {
-            dao = createdDao;
-            installedPlugins = returnedPlugins;
-            console2.log("  DEBUG: DAO created successfully at:", dao);
-            console2.log("  DEBUG: Installed plugins count:", installedPlugins.length);
-        } catch Error(string memory reason) {
-            console2.log("  ERROR: DAOFactory.createDao failed with reason:", reason);
-            revert(string.concat("DAOFactory.createDao failed: ", reason));
-        } catch Panic(uint errorCode) {
-            console2.log("  ERROR: DAOFactory.createDao panicked with code:", errorCode);
-            revert(string.concat("DAOFactory.createDao panicked: ", vm.toString(errorCode)));
-        } catch (bytes memory lowLevelData) {
-            console2.log("  ERROR: DAOFactory.createDao failed with low-level error");
-            console2.log("  ERROR: Raw revert data length:", lowLevelData.length);
-            console2.logBytes(lowLevelData);
-            
-            // Try to decode common revert patterns
-            if (lowLevelData.length >= 4) {
-                bytes4 selector = bytes4(lowLevelData);
-                console2.log("  ERROR: Revert selector:", vm.toString(selector));
-                
-                if (selector == 0x08c379a0) { // Error(string)
-                    console2.log("  ERROR: This is an Error(string) revert");
-                    // Try to decode string if data is long enough
-                    if (lowLevelData.length > 68) {
-                        console2.log("  ERROR: Error string data present, length:", lowLevelData.length);
-                    }
-                }
-            }
-            revert("DAOFactory.createDao failed with low-level error");
-        }
-        
-        // Get plugin from return value
-        require(installedPlugins.length > 0, "no plugins installed");
-        
-        // Use installedPlugins[0].plugin as per reviewer guidance
-        tokenVotingPlugin = installedPlugins[0].plugin;
-        require(tokenVotingPlugin != address(0) && tokenVotingPlugin.code.length > 0, "token voting plugin not found");
-        
-        // The governance token address should be available from plugin helpers
-        // For now, we'll extract it from the plugin's token() method or similar
-        // TODO: Get actual governance token address from plugin setup  
-        governanceToken = tokenVotingPlugin; // Placeholder - needs proper extraction
-        
+        bytes memory returnData = Address.functionCall(daoFactory, callData);
+        DAOFactory.InstalledPlugin[] memory installed;
+        (dao, installed) = abi.decode(
+            returnData,
+            (address, DAOFactory.InstalledPlugin[])
+        );
+
+        require(installed.length > 0, "no plugins");
+        tokenVotingPlugin = installed[0].plugin;
+        require(tokenVotingPlugin != address(0) && tokenVotingPlugin.code.length > 0, "bad plugin");
+
+        // Ask plugin for its governance token instead of placeholder
+        governanceToken = address(TokenVoting(tokenVotingPlugin).getVotingToken());
+        require(governanceToken != address(0) && governanceToken.code.length > 0, "bad token");
     }
     
     

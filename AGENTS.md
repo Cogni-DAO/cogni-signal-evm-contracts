@@ -1,17 +1,13 @@
 # CogniSignal Contract System
 
 ## Overview
-Minimal on-chain governance events for GitHub operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
+On-chain governance events for VCS operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
-## Status: Proof of Concept Working ✅
-- **Contract:** `CogniSignal.sol` deployed and verified on Sepolia at `0x7115D79246D1aE2D4bF5a6D5fA626B426fE8F5cD`
-- **Integration:** End-to-end with cogni-git-admin functioning
-- **Deployment:** `make dao-setup` deploys complete stack with automatic verification
+## Deployment
+`make dao-setup` deploys governance stack with automatic verification on Sepolia.
 
-## Current Limitations (POC)
-- Single wallet execution for testing (not multi-signature governance)
-- Requires careful configuration and setup
-- Not production-ready without proper permission management
+## Architecture  
+Modular governance providers enable different DAO frameworks while maintaining stable CogniSignal interface.
 
 ## Architecture
 ```
@@ -82,12 +78,9 @@ forge test --match-path test/unit/    # Unit tests only
 forge test --match-path test/e2e/     # E2E tests only  
 ```
 
-## Web3 Development: Empty Revert Data Debugging
+## Empty Revert Data Debugging
 
-**Problem**: Contract calls fail with empty revert data, making debugging impossible  
-**Impact**: Lost development time chasing wrong solutions without error context
-
-### Likely Causes (Ranked by Frequency)
+### Causes
 
 1. **Swallowing Revert Data on Low-Level Calls**
    ```solidity
@@ -147,36 +140,20 @@ forge test --match-path test/e2e/     # E2E tests only
    }
    ```
 
-### Best Practices
+### Practices
 
-**Use Custom Errors**:
+**Custom Errors**:
 ```solidity
 error NotAllowed(address who, uint256 id);
 if (!authorized) revert NotAllowed(msg.sender, tokenId);
 ```
 
-**Always Bubble Revert Data**:
+**Bubble Revert Data**:
 ```solidity
-// Use OpenZeppelin helpers that auto-bubble
 Address.functionCall(target, callData);
-Address.functionDelegateCall(target, callData);
-SafeERC20.safeTransfer(token, recipient, amount);
 ```
 
-**Comprehensive Test Error Handling**:
-```solidity
-try contract.riskyFunction() {
-    fail("Should have reverted");
-} catch Error(string memory reason) {
-    assertEq(reason, "Expected reason");
-} catch Panic(uint256 code) {
-    assertEq(code, 0x11); // Arithmetic overflow
-} catch (bytes memory customError) {
-    assertEq(bytes4(customError), CustomError.selector);
-}
-```
-
-### Quick Diagnostic Checklist
+### Diagnostic Checklist
 
 1. **Search for `require(success, "…")` after low-level calls** → Replace with bubbling pattern
 2. **If using proxy, verify fallback returns returndata exactly** → Add assembly bubbling  
@@ -184,8 +161,5 @@ try contract.riskyFunction() {
 4. **Ensure compiler ≥0.8.4 and tests decode custom errors** → Update test patterns
 5. **Add `returndatasize()` logging** → Confirm bytes exist before being dropped
 
-**Debug Command**: Use `cast call` to test function calls and see raw revert data:
-```bash
-cast call --rpc-url $RPC_URL $CONTRACT "function(params)" <args>
-```
+**Debug**: `cast call --rpc-url $RPC_URL $CONTRACT "function(params)" <args>`
 

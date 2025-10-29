@@ -10,7 +10,7 @@ remappings = [
     "@aragon/osx-commons-contracts/src/=lib/token-voting-plugin/lib/osx-commons/contracts/src/",
     "token-voting-plugin/=lib/token-voting-plugin/"
 ]
-evm_version = "paris"
+evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
 via_ir = true

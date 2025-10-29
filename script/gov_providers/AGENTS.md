@@ -1,32 +1,29 @@
 # Governance Providers
 
-Modular governance provider system enabling CogniSignal to work with any DAO framework while maintaining a stable, governance-agnostic ABI.
+Modular system enabling CogniSignal to work with any DAO framework.
 
 ## Directory Structure
 
-**IGovProvider.sol** - Standard interface for all governance providers  
-**GovProviderFactory.sol** - Provider selection and instantiation logic  
-**Aragon/** - Production Aragon OSx DAO deployment (tested, working)  
-**SimpleDao/** - Lightweight development DAO fallback (untested)
+**IGovProvider.sol** - Standard interface with `GovConfig` struct containing `tokenInitialHolder`  
+**GovProviderFactory.sol** - Provider selection and instantiation  
+**Aragon/** - Aragon OSx with TokenVoting plugin  
+**SimpleDao/** - SimpleDAO fallback
 
 ## Provider Selection
 
-- **ARAGON** (default): Aragon OSx deployment (working)
-- **SIMPLE**: SimpleDAO deployment (untested)
+- **ARAGON**: Aragon OSx deployment  
+- **SIMPLE**: SimpleDAO deployment
 
 Configure via `GOV_PROVIDER` environment variable.
 
-## Architecture Pattern
+## Architecture
 
-CogniSignal remains governance-agnostic. Providers handle framework-specific complexity:
-1. Implement `IGovProvider` interface
-2. Deploy governance infrastructure 
-3. Return standardized `GovDeploymentResult`
-4. Enable framework migration without CogniSignal changes
+Providers implement `IGovProvider` interface:
+1. Receive `GovConfig` with token parameters and addresses
+2. Deploy framework-specific governance infrastructure  
+3. Return `GovDeploymentResult` with DAO, plugin, and token addresses
 
-## Integration Best Practices
-
-### Core Principle: Never Guess - Always Verify
+## Integration Practices
 
 **1. Address Validation**
 ```bash
@@ -80,13 +77,6 @@ curl https://dweb.link/ipfs/<CID>  # Fetch build metadata for _data ABI
 - Use `cast call` to test before script integration
 - Manual encoding with cast/ethers offline
 
-### Network Configuration Example
-```solidity
-library NetworkAddresses {
-    function getDAOFactory(uint256 chainId) internal pure returns (address) {
-        if (chainId == 11155111) return 0xB815791c...; // Sepolia
-    }
-}
-```
+### Configuration
 
-**Remember**: Governance integrations involve multiple protocols. Always use official sources and systematic debugging.
+Addresses loaded from artifacts in SetupDevChain.s.sol, passed to providers via `providerSpecificConfig` bytes field. Providers decode their required addresses.
