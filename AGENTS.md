@@ -9,6 +9,8 @@ On-chain governance events for VCS operations via [cogni-git-admin](https://gith
 ## Architecture  
 Modular governance providers enable different DAO frameworks while maintaining stable CogniSignal interface.
 
+Cross-chain governance configuration system supports Aragon OSx TokenVoting, OpenZeppelin Governor, and Solana Realms via standardized config schema.
+
 ## Architecture
 ```
 DAO → signal() → CogniAction event → Alchemy webhook → cogni-git-admin → VCS Provider APIs
@@ -162,4 +164,119 @@ Address.functionCall(target, callData);
 5. **Add `returndatasize()` logging** → Confirm bytes exist before being dropped
 
 **Debug**: `cast call --rpc-url $RPC_URL $CONTRACT "function(params)" <args>`
+
+## Cross-Chain Governance Configuration
+
+### Universal GovConfig Schema
+
+Standardized configuration supporting Aragon OSx TokenVoting, OpenZeppelin Governor, and Solana Realms:
+
+```yaml
+org:
+  name: string                         # DAO name/title
+  metadataURI: string                  # IPFS metadata link
+
+governance_model:
+  type: token_voting | address_list | council | multisig
+  module_version: string               # Provider-specific version
+
+token_spec:
+  mode: create_new | existing          # Token deployment strategy
+  mint_or_token_address: address       # Token address or mint authority
+  symbol: string                       # Token symbol
+  decimals: uint8                      # Token decimals
+  delegation: bool                     # Enable vote delegation
+
+initial_holders:
+  - address: address                   # Initial token holders
+    amount: uint256                    # Token amounts
+
+voting_params:
+  support_threshold_pct: uint32        # Majority threshold (0-1e6 or %)
+  quorum_pct: uint32                   # Minimum participation quorum
+  proposal_threshold: uint256          # Min votes to create proposals
+  voting_delay: uint64                 # Delay before voting starts
+  voting_period: uint64                # Voting duration
+  early_execution: bool                # Enable early execution/tipping
+  vote_replacement: bool               # Allow changing votes
+
+executive_params:
+  timelock_delay: uint64               # Execution delay (if applicable)
+
+membership_filters:
+  allowlist: address[]                 # Permitted addresses (optional)
+  blocklist: address[]                 # Blocked addresses (optional)
+  excluded_accounts: address[]         # Excluded from governance
+
+treasury:
+  treasury_accounts: address[]         # DAO treasury addresses
+
+admin_emergency:
+  guardian_multisig: address           # Emergency guardian/veto power
+
+chain:
+  network_id_or_cluster: string        # Network identifier
+  required_program_or_plugin_version: string  # Version requirements
+```
+
+### Provider Compatibility Matrix
+
+| Field | Aragon OSx | OpenZeppelin | Solana Realms |
+|-------|------------|--------------|---------------|
+| org metadata | ✓ DAO metadata | App-level | ✓ Realm metadata |
+| token voting | ✓ Plugin | ✓ IVotes | ✓ Community/council |
+| delegation | ✓ IVotes | ✓ Native | ✓ Via add-ins |
+| support_threshold | ✓ supportThreshold | Via counting | - |
+| quorum | ✓ minParticipation | ✓ quorum() | ✓ |
+| proposal_threshold | ✓ minProposerVotingPower | ✓ proposalThreshold | ✓ |
+| voting_delay | Mode-dependent | ✓ votingDelay | ✓ |
+| voting_period | ✓ minDuration | ✓ votingPeriod | ✓ |
+| early_execution | ✓ Early exec mode | Via timelock bypass | ✓ Vote tipping |
+| vote_replacement | ✓ Vote replacement | Not standard | No |
+| timelock | Via permissions | ✓ TimelockController | ✓ Via authorities |
+
+### Implementation Notes
+
+**Current vs Target:**
+- Current `IGovProvider.GovConfig` has basic token params only
+- Target schema adds comprehensive governance parameters
+- Use `providerSpecificConfig` for provider-specific extensions
+- Maintain backward compatibility during migration
+
+**Provider-Specific Extensions:**
+- **Aragon**: PluginRepo versions, execution modes, permission layers
+- **OpenZeppelin**: Timelock toggles, counting modules, extension flags  
+- **Solana**: Add-ins for voter-weight, realm configs, program IDs
+
+**Migration Strategy:**
+1. Extend `GovConfig` struct incrementally
+2. Keep existing simple providers functional
+3. Add comprehensive config validation
+4. Provider factory handles config mapping
+
+## Repository Architecture
+
+Cross-chain governance requires separate repositories for clean separation:
+
+### cogni-gov-config
+- Shared GovConfig schema definitions
+- Configuration examples and templates
+- Schema validation logic
+- Language-agnostic specification
+
+### cogni-evm-smart-contracts  
+- CogniSignal core contract
+- EVM provider adapters (Aragon OSx, OpenZeppelin Governor)
+- Foundry deployment scripts and tests
+- Current `cogni-gov-contracts` evolved
+
+### cogni-solana-contracts
+- Realms/SPL Governance adapter programs
+- Solana program IDs and deployment helpers
+- Anchor/native program development
+- Cross-program invocation logic
+
+### ++ more DAO chain providers, such as SovereignNetwork
+
+**Rationale:** Clean separation by specification vs EVM vs Solana implementation with minimal coupling between chains and maximum reusability of the shared configuration schema.
 
