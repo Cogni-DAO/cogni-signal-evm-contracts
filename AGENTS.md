@@ -71,6 +71,20 @@ make dao-setup
 
 See `README.md` for detailed setup instructions.
 
+## Token Faucet
+
+**v0**: Simple faucet - anyone gets 1 governance token, once per wallet.
+
+**Components:**
+- `FaucetMinter.sol` - Core contract with claim tracking
+- `DeployFaucetMinter.s.sol` - Deployment script
+
+**Setup:**
+- Dev: `GrantMintToFaucet.s.sol` script generates permission proposal
+- Prod: `cogni-proposal-launcher` creates deeplink for proposal
+
+**v1**: Aragon plugin with request-based access control (design TBD).
+
 ## Testing
 ```bash
 forge test           # All tests

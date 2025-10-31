@@ -55,3 +55,46 @@ make deploy-contract
 ```
 
 **Required:** `DAO_ADDRESS`, `WALLET_PRIVATE_KEY`, `EVM_RPC_URL`, `ETHERSCAN_API_KEY`
+
+## DeployFaucetMinter.s.sol
+
+Deploys token faucet for one-time governance token claims.
+
+```bash
+forge script DeployFaucetMinter --rpc-url $EVM_RPC_URL --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+```
+
+**Required:**
+- `DAO_ADDRESS` - DAO that will control the faucet
+- `GOVERNANCE_TOKEN` - Governance token to mint (note: uses GOVERNANCE_TOKEN not TOKEN_ADDRESS)
+- `WALLET_PRIVATE_KEY`, `EVM_RPC_URL`, `ETHERSCAN_API_KEY`
+
+**Optional:**
+- `FAUCET_AMOUNT_PER_CLAIM` - Tokens per claim (default: 1e18)
+- `FAUCET_GLOBAL_CAP` - Maximum total mintable (default: 1000000e18)
+
+**Output:** `FAUCET_ADDRESS` for UI integration
+
+## GrantMintToFaucet.s.sol
+
+**DEV-ONLY:** Creates DAO proposal to grant faucet permissions. Not for production use. Requires usage of a private key from a wallet holding the gov token.
+
+```bash
+forge script GrantMintToFaucet --rpc-url $EVM_RPC_URL --broadcast
+```
+
+**Required:**
+- `DAO_ADDRESS` - DAO address
+- `GOVERNANCE_TOKEN` - Governance token address  
+- `FAUCET_ADDRESS` - Deployed faucet address
+- `ARAGON_VOTING_PLUGIN_CONTRACT` - TokenVoting plugin address
+- `WALLET_PRIVATE_KEY`, `EVM_RPC_URL`
+
+**Output:** Proposal ID for DAO members to vote on
+
+**Permissions Proposed:**
+1. `MINT_PERMISSION_ID` on token → faucet (enables minting)
+2. `CONFIG_PERMISSION_ID` on faucet → DAO (enables amountPerClaim/globalCap updates)  
+3. `PAUSE_PERMISSION_ID` on faucet → DAO (enables pause/unpause)
+
+**Production Flow:** Use governance UI deeplinks with hardcoded proposal parameters instead of this script.
