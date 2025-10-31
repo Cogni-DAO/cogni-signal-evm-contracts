@@ -2,7 +2,12 @@
 
 ## SetupDevChain.s.sol
 
-Deploys governance stack with modular provider system.
+Deploys governance stack:
+- ERC20 Token
+- Aragon OSx DAO
+- CogniSignal contract
+- OSx TokenVoting plugin, set up to call CogniSignal
+- (Unauthorized) Gov Token Faucet
 
 ### Architecture
 1. **Governance Provider** - Pluggable DAO framework support
@@ -12,7 +17,7 @@ Deploys governance stack with modular provider system.
 
 ### Provider System
 - `GOV_PROVIDER=aragon-osx` (default) - Aragon OSx with TokenVoting plugin
-- `GOV_PROVIDER=simple` - SimpleDAO fallback
+- `GOV_PROVIDER=simple` - SimpleDAO fallback (Not implemented)
 
 ### Usage
 ```bash

@@ -6,6 +6,14 @@
 /join?chainId=11155111&faucet=0x...&token=0x...&amount=1&decimals=18
 ```
 
+## Demo Deep Link (Sepolia)
+
+```
+/propose-faucet?chainId=11155111&dao=0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5&token=0xYourTokenAddress&faucet=0xYourFaucetAddress&voting=0xYourVotingPluginAddress
+```
+
+This creates a governance proposal to grant the faucet `MINT_PERMISSION_ID` on the governance token, enabling token claims.
+
 ## Required Parameters
 
 | Parameter | Type | Description | Example |
