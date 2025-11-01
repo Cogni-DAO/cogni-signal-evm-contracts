@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {Script, console2} from "forge-std/Script.sol";
 import {Deploy} from "./Deploy.s.sol";
 import {CogniSignal} from "../src/CogniSignal.sol";
+import {FaucetMinter} from "../src/FaucetMinter.sol";
 import {IGovProvider} from "./gov_providers/IGovProvider.sol";
 import {GovProviderFactory} from "./gov_providers/GovProviderFactory.sol";
 
@@ -32,6 +33,7 @@ contract SetupDevChain is Script {
         address dao;
         address votingPlugin;       // Voting plugin address
         address cogniSignal;
+        address faucet;            // FaucetMinter address (unauthorized until DAO proposal)
         address deployer;
         uint256 chainId;
         string tokenName;
@@ -87,6 +89,17 @@ contract SetupDevChain is Script {
         CogniSignal cogniSignal = new CogniSignal(govResult.daoAddress);
         mustHaveCode(address(cogniSignal), "CogniSignal");
         
+        // 4. Deploy FaucetMinter (unauthorized until DAO proposal grants permissions)
+        uint256 amountPerClaim = vm.envOr("FAUCET_AMOUNT_PER_CLAIM", uint256(1e18)); // 1 token
+        uint256 globalCap = vm.envOr("FAUCET_GLOBAL_CAP", uint256(1000000e18)); // 1M tokens
+        FaucetMinter faucet = new FaucetMinter(
+            govResult.daoAddress,
+            govResult.tokenAddress,
+            amountPerClaim,
+            globalCap
+        );
+        mustHaveCode(address(faucet), "FaucetMinter");
+        
         vm.stopBroadcast();
         
         // Prepare result
@@ -95,6 +108,7 @@ contract SetupDevChain is Script {
             dao: govResult.daoAddress,
             votingPlugin: govResult.votingPluginAddress,
             cogniSignal: address(cogniSignal),
+            faucet: address(faucet),
             deployer: deployer,
             chainId: block.chainid,
             tokenName: tokenName,
@@ -121,6 +135,7 @@ contract SetupDevChain is Script {
             console2.log("Voting Plugin: ", result.votingPlugin);
         }
         console2.log("CogniSignal:   ", result.cogniSignal);
+        console2.log("Faucet:        ", result.faucet, " (UNAUTHORIZED - needs DAO proposal)");
         console2.log("Chain ID:      ", result.chainId);
         console2.log("Deployer:      ", result.deployer);
         console2.log("");
@@ -187,6 +202,7 @@ contract SetupDevChain is Script {
             envContent,
             "\n## Optional Extras\n",
             "GOVERNANCE_TOKEN=", vm.toString(result.token), "\n",
+            "UNAUTHORIZED_GOVTOKEN_FAUCET=", vm.toString(result.faucet), "     # Requires DAO proposal to grant MINT_PERMISSION\n",
             "TOKEN_NAME=", result.tokenName, "\n",
             "TOKEN_SYMBOL=", result.tokenSymbol, "\n",
             "GOV_PROVIDER=", result.govProviderType, "\n",

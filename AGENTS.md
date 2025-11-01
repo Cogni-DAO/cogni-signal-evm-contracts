@@ -4,7 +4,7 @@
 On-chain governance events for VCS operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
 ## Deployment
-`make dao-setup` deploys governance stack with automatic verification on Sepolia.
+`make dao-setup` deploys governance stack + **unpermissioned faucet** with automatic verification on Sepolia.
 
 ## Architecture  
 Modular governance providers enable different DAO frameworks while maintaining stable CogniSignal interface.
@@ -67,9 +67,24 @@ cp .env.TOKEN.example .env
 make dao-setup
 
 # Copy generated environment variables to cogni-git-admin
+# Faucet needs DAO proposal to mint tokens (see script/GrantMintToFaucet.s.sol)
 ```
 
 See `README.md` for detailed setup instructions.
+
+## Token Faucet
+
+**v0**: Simple faucet - anyone gets 1 governance token, once per wallet.
+
+**Components:**
+- `FaucetMinter.sol` - Core contract with claim tracking
+- `DeployFaucetMinter.s.sol` - Deployment script
+
+**Setup:**
+- Dev: `GrantMintToFaucet.s.sol` script generates permission proposal
+- Prod: `cogni-proposal-launcher` creates deeplink for proposal
+
+**v1**: Aragon plugin with request-based access control (design TBD).
 
 ## Testing
 ```bash

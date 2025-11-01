@@ -95,3 +95,39 @@ function test_RevertWhen_InvalidInput() public {
 - **Test one thing** - Don't combine unrelated functionality  
 - **Always validate events** - Use `vm.expectEmit(true, true, true, true)`
 - **Test both success and failure** - Every access control needs both cases
+
+## FaucetMinter.t.sol
+
+22 unit tests covering token faucet functionality with mock contracts.
+
+### Test Categories
+
+**Constructor Tests:**
+- Valid deployment with proper state initialization
+- Revert on zero amount per claim
+- Revert on invalid global cap (< amount per claim)
+
+**Claim Tests:**
+- Successful first claim with event emission and state updates
+- Revert on duplicate claim from same address (`AlreadyClaimed`)
+- Revert when faucet is paused (`FaucetPaused`)
+- Revert when global cap would be exceeded (`GlobalCapExceeded`)
+- Multiple different users can claim successfully
+
+**Access Control Tests:**
+- DAO can pause/unpause faucet
+- DAO can update configuration (amount per claim, global cap)
+- Non-DAO addresses cannot access restricted functions
+
+**Reentrancy Protection:**
+- Claim function properly protected with `ReentrancyGuard`
+- Simulated reentrancy attacks are blocked
+
+**View Function Tests:**
+- `hasClaimed()` tracking works correctly
+- `remainingTokens()` calculates available tokens under cap
+- Permission ID constants match expected values
+
+### Mock Contracts
+- `MockDAO`: Simulates Aragon DAO permission system
+- `MockToken`: Simulates GovernanceERC20 with mint functionality and permissions
