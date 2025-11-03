@@ -72,19 +72,27 @@ make dao-setup
 
 See `README.md` for detailed setup instructions.
 
+## Token System
+
+**NonTransferableVotes** - Custom ERC20Votes token preventing secondary markets while enabling governance.
+
+**Key Features:**
+- Blocks all user-to-user transfers (prevents trading)  
+- Enforces exactly 1e18 tokens per address (1-person-1-vote)
+- Auto-delegates on mint (voting power active immediately)
+- Owner-controlled minter roles for authorized contracts
+
 ## Token Faucet
 
-**v0**: Simple faucet - anyone gets 1 governance token, once per wallet.
+**FaucetMinter.sol** - Anyone claims exactly 1 governance token, once per wallet.
 
-**Components:**
-- `FaucetMinter.sol` - Core contract with claim tracking
-- `DeployFaucetMinter.s.sol` - Deployment script
+**Setup Flow:**
+1. Deploy faucet (unauthorized initially)
+2. Create DAO proposal: `token.grantMintRole(faucet)`  
+3. After approval, faucet operational via minter role
 
-**Setup:**
-- Dev: `GrantMintToFaucet.s.sol` script generates permission proposal
-- Prod: `cogni-proposal-launcher` creates deeplink for proposal
-
-**v1**: Aragon plugin with request-based access control (design TBD).
+**Integration:**
+- `cogni-proposal-launcher` creates deeplink for minter role proposal
 
 ## Testing
 ```bash

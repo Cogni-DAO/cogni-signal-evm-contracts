@@ -20,8 +20,10 @@ Configure via `GOV_PROVIDER` environment variable.
 
 Providers implement `IGovProvider` interface:
 1. Receive `GovConfig` with token parameters and addresses
-2. Deploy framework-specific governance infrastructure  
-3. Return `GovDeploymentResult` with DAO, plugin, and token addresses
+2. Deploy custom NonTransferableVotes token with initial mint
+3. Deploy framework-specific governance infrastructure using custom token
+4. Transfer token ownership to DAO
+5. Return `GovDeploymentResult` with DAO, plugin, and token addresses
 
 ## Integration Practices
 
@@ -80,3 +82,25 @@ curl https://dweb.link/ipfs/<CID>  # Fetch build metadata for _data ABI
 ### Configuration
 
 Addresses loaded from artifacts in SetupDevChain.s.sol, passed to providers via `providerSpecificConfig` bytes field. Providers decode their required addresses.
+
+## OpenZeppelin Version Policy
+
+**Current Versions:**
+- OpenZeppelin Contracts: v4.9.5
+- OpenZeppelin Contracts Upgradeable: v4.9.5
+
+**Why v4, not v5:**
+
+1. **Aragon OSx Dependency**: Token-voting-plugin v1.4.1 requires OpenZeppelin v4.x. Aragon documentation explicitly references OpenZeppelin 4.x APIs.
+
+2. **Breaking Changes in v5**: 
+   - Storage layout incompatibility (unsafe to upgrade from v4.9.x to v5.x)
+   - Minimum Solidity version requirement bumped to 0.8.21+
+   - Custom error identifier changes
+   - Function signature changes in Governor contracts
+
+3. **Upgrade Path Risk**: Since contracts use upgradeable patterns (UUPS proxies), migrating to v5 would break storage compatibility and could corrupt existing deployed contracts.
+
+4. **Timeline**: OpenZeppelin v5.1.0 was only released in October 2024, after project dependencies were established.
+
+**Decision**: Project correctly locks to OpenZeppelin v4.9.5 due to Aragon OSx ecosystem dependency. Upgrading to v5 would introduce breaking changes without clear benefits for the governance use case.

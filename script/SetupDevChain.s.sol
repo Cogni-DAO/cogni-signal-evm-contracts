@@ -90,8 +90,8 @@ contract SetupDevChain is Script {
         mustHaveCode(address(cogniSignal), "CogniSignal");
         
         // 4. Deploy FaucetMinter (unauthorized until DAO proposal grants permissions)
-        uint256 amountPerClaim = vm.envOr("FAUCET_AMOUNT_PER_CLAIM", uint256(1e18)); // 1 token
-        uint256 globalCap = vm.envOr("FAUCET_GLOBAL_CAP", uint256(1000000e18)); // 1M tokens
+        uint256 amountPerClaim = vm.envOr("FAUCET_AMOUNT_PER_CLAIM", uint256(1e18)); // 1 full token
+        uint256 globalCap = vm.envOr("FAUCET_GLOBAL_CAP", uint256(1000000e18)); // 1M full tokens
         FaucetMinter faucet = new FaucetMinter(
             govResult.daoAddress,
             govResult.tokenAddress,

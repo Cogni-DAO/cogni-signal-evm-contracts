@@ -3,16 +3,15 @@
 ## SetupDevChain.s.sol
 
 Deploys governance stack:
-- ERC20 Token
-- Aragon OSx DAO
-- CogniSignal contract
-- OSx TokenVoting plugin, set up to call CogniSignal
-- (Unauthorized) Gov Token Faucet
+- NonTransferableVotes token (custom ERC20Votes)
+- Aragon OSx DAO with TokenVoting plugin
+- CogniSignal contract  
+- Token faucet (requires DAO proposal for minter role)
 
 ### Architecture
 1. **Governance Provider** - Pluggable DAO framework support
 2. **DAO Contract** - Framework-specific implementation  
-3. **Governance Token** - ERC20 voting token (created by provider)
+3. **Governance Token** - NonTransferableVotes (deployed and owned by DAO)
 4. **CogniSignal** - Event aggregation contract
 
 ### Provider System
@@ -98,7 +97,7 @@ forge script GrantMintToFaucet --rpc-url $EVM_RPC_URL --broadcast
 **Output:** Proposal ID for DAO members to vote on
 
 **Permissions Proposed:**
-1. `MINT_PERMISSION_ID` on token → faucet (enables minting)
+1. `grantMintRole(faucet)` - Grants faucet minter role on NonTransferableVotes
 2. `CONFIG_PERMISSION_ID` on faucet → DAO (enables amountPerClaim/globalCap updates)  
 3. `PAUSE_PERMISSION_ID` on faucet → DAO (enables pause/unpause)
 
