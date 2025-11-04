@@ -3,13 +3,9 @@ pragma solidity ^0.8.13;
 
 // Import real types directly from official plugin sources  
 import {Script, console2} from "forge-std/Script.sol";
-import {Vm} from "forge-std/Vm.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IGovProvider} from "../IGovProvider.sol";
 import {DAOFactory} from "@aragon/osx/framework/dao/DAOFactory.sol";
-import {IDAO} from "@aragon/osx-commons-contracts/src/dao/IDAO.sol";
-import {IPluginSetup} from "@aragon/osx-commons-contracts/src/plugin/setup/IPluginSetup.sol";
 import {PluginSetupRef} from "@aragon/osx/framework/plugin/setup/PluginSetupProcessorHelpers.sol";
 import {PluginRepo} from "@aragon/osx/framework/plugin/repo/PluginRepo.sol";
 import {MajorityVotingBase} from "token-voting-plugin/src/base/MajorityVotingBase.sol";

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Script, console2} from "forge-std/Script.sol";
 import {Action} from "@aragon/osx-commons-contracts/src/executors/IExecutor.sol";
 import {PermissionManager} from "@aragon/osx/core/permission/PermissionManager.sol";
-import {GovernanceERC20} from "token-voting-plugin/src/erc20/GovernanceERC20.sol";
+import {NonTransferableVotes} from "../src/NonTransferableVotes.sol";
 import {TokenVoting} from "token-voting-plugin/src/TokenVoting.sol";
 import {IMajorityVoting} from "token-voting-plugin/src/base/IMajorityVoting.sol";
 import {FaucetMinter} from "../src/FaucetMinter.sol";
@@ -43,11 +43,11 @@ contract GrantMintToFaucet is Script {
         console2.log("Voting Plugin:", votingPluginAddress);
         
         // Get contracts
-        GovernanceERC20 token = GovernanceERC20(tokenAddress);
+        // NonTransferableVotes token = NonTransferableVotes(tokenAddress); // unused
         FaucetMinter faucet = FaucetMinter(faucetAddress);
         TokenVoting voting = TokenVoting(votingPluginAddress);
         
-        bytes32 mintPermissionId = token.MINT_PERMISSION_ID();
+        // Use direct minter role instead of Aragon permission
         bytes32 configPermissionId = faucet.CONFIG_PERMISSION_ID();
         bytes32 pausePermissionId = faucet.PAUSE_PERMISSION_ID();
         
@@ -56,11 +56,11 @@ contract GrantMintToFaucet is Script {
         // Build proposal actions using Action struct
         Action[] memory actions = new Action[](3);
         
-        // Grant MINT_PERMISSION to faucet
+        // Grant minter role to faucet
         actions[0] = Action({
-            to: daoAddress,
+            to: tokenAddress,
             value: 0,
-            data: abi.encodeWithSelector(PermissionManager.grant.selector, tokenAddress, faucetAddress, mintPermissionId)
+            data: abi.encodeWithSelector(NonTransferableVotes.grantMintRole.selector, faucetAddress)
         });
         
         // Grant CONFIG_PERMISSION to DAO
@@ -81,7 +81,7 @@ contract GrantMintToFaucet is Script {
             "# Enable Token Faucet\\n\\n",
             "Enable the token faucet at `", vm.toString(faucetAddress), "` for new DAO members.\\n\\n",
             "**Actions:**\\n",
-            "- Grant MINT_PERMISSION to faucet\\n",
+            "- Grant minter role to faucet\\n",
             "- Grant CONFIG_PERMISSION to DAO\\n", 
             "- Grant PAUSE_PERMISSION to DAO"
         ));

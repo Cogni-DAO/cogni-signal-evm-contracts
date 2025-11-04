@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {FaucetMinter} from "../../src/FaucetMinter.sol";
-import {GovernanceERC20} from "token-voting-plugin/src/erc20/GovernanceERC20.sol";
-import {IDAO} from "@aragon/osx-commons-contracts/src/dao/IDAO.sol";
-import {DaoUnauthorized} from "@aragon/osx-commons-contracts/src/permission/auth/auth.sol";
 
 contract MockDAO is Test {
     mapping(bytes32 => mapping(address => mapping(address => bool))) public permissions;
@@ -30,20 +27,30 @@ contract MockDAO is Test {
 
 contract MockToken is Test {
     mapping(address => uint256) public balanceOf;
-    mapping(bytes32 => mapping(address => mapping(address => bool))) public permissions;
+    mapping(address => bool) public minters;
     uint256 public totalSupply;
+    address public owner;
     
-    bytes32 public constant MINT_PERMISSION_ID = keccak256("MINT_PERMISSION");
-    
-    function mint(address to, uint256 amount) external {
-        // Check permission via auth modifier simulation
-        require(permissions[MINT_PERMISSION_ID][address(this)][msg.sender], "UNAUTHORIZED");
-        balanceOf[to] += amount;
-        totalSupply += amount;
+    constructor() {
+        owner = msg.sender;
     }
     
-    function grantPermission(address who) external {
-        permissions[MINT_PERMISSION_ID][address(this)][who] = true;
+    function mint(address to, uint256 amount) external {
+        require(msg.sender == owner || minters[msg.sender], "Not authorized");
+        require(amount == 1e18, "Must mint exactly 1e18");
+        require(balanceOf[to] == 0, "Address already has 1");
+        balanceOf[to] = 1e18;
+        totalSupply += 1e18;
+    }
+    
+    function grantMintRole(address account) external {
+        require(msg.sender == owner, "Not owner");
+        minters[account] = true;
+    }
+    
+    function transferOwnership(address newOwner) external {
+        require(msg.sender == owner, "Not owner");
+        owner = newOwner;
     }
 }
 
@@ -78,7 +85,7 @@ contract FaucetMinterTest is Test {
         );
         
         // Grant mint permission to faucet
-        token.grantPermission(address(faucet));
+        token.grantMintRole(address(faucet));
         
         // Grant config permissions to DAO
         dao.grant(address(faucet), address(dao), CONFIG_PERMISSION_ID);
@@ -151,7 +158,7 @@ contract FaucetMinterTest is Test {
             AMOUNT_PER_CLAIM,
             AMOUNT_PER_CLAIM // Cap = amount per claim
         );
-        token.grantPermission(address(smallFaucet));
+        token.grantMintRole(address(smallFaucet));
         
         // First claim succeeds
         vm.prank(USER1);
@@ -216,29 +223,7 @@ contract FaucetMinterTest is Test {
     
     // ============ Configuration Tests ============
     
-    function test_SetAmountPerClaim_Success() public {
-        uint256 newAmount = 2e18;
-        
-        vm.expectEmit(true, true, true, true, address(faucet));
-        emit AmountPerClaimUpdated(AMOUNT_PER_CLAIM, newAmount);
-        
-        vm.prank(address(dao));
-        faucet.setAmountPerClaim(newAmount);
-        
-        assertEq(faucet.amountPerClaim(), newAmount);
-    }
-    
-    function test_SetAmountPerClaim_RevertWhen_ZeroAmount() public {
-        vm.expectRevert(FaucetMinter.ZeroAmount.selector);
-        vm.prank(address(dao));
-        faucet.setAmountPerClaim(0);
-    }
-    
-    function test_SetAmountPerClaim_RevertWhen_NotDAO() public {
-        vm.expectRevert(); // Just expect any revert since error format changed
-        vm.prank(USER1);
-        faucet.setAmountPerClaim(2e18);
-    }
+    // removed: setAmountPerClaim function removed (amount fixed at 1e18)
     
     function test_SetGlobalCap_Success() public {
         uint256 newCap = 2000e18;
@@ -287,9 +272,6 @@ contract FaucetMinterTest is Test {
         assertEq(faucet.remainingTokens(), GLOBAL_CAP - AMOUNT_PER_CLAIM);
     }
     
-    function test_GetMintPermissionId() public view {
-        assertEq(faucet.getMintPermissionId(), token.MINT_PERMISSION_ID());
-    }
     
     // ============ Reentrancy Tests ============
     
