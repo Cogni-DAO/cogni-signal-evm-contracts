@@ -4,7 +4,7 @@
 On-chain governance events for VCS operations via [cogni-git-admin](https://github.com/Cogni-DAO/cogni-git-admin).
 
 ## Deployment
-`make dao-setup` deploys governance stack with automatic verification on Sepolia.
+`make dao-setup` deploys governance stack + **unpermissioned faucet** with automatic verification on Sepolia.
 
 ## Architecture  
 Modular governance providers enable different DAO frameworks while maintaining stable CogniSignal interface.
@@ -67,9 +67,32 @@ cp .env.TOKEN.example .env
 make dao-setup
 
 # Copy generated environment variables to cogni-git-admin
+# Faucet needs DAO proposal to mint tokens (see script/GrantMintToFaucet.s.sol)
 ```
 
 See `README.md` for detailed setup instructions.
+
+## Token System
+
+**NonTransferableVotes** - Custom ERC20Votes token preventing secondary markets while enabling governance.
+
+**Key Features:**
+- Blocks all user-to-user transfers (prevents trading)  
+- Enforces exactly 1e18 tokens per address (1-person-1-vote)
+- Auto-delegates on mint (voting power active immediately)
+- Owner-controlled minter roles for authorized contracts
+
+## Token Faucet
+
+**FaucetMinter.sol** - Anyone claims exactly 1 governance token, once per wallet.
+
+**Setup Flow:**
+1. Deploy faucet (unauthorized initially)
+2. Create DAO proposal: `token.grantMintRole(faucet)`  
+3. After approval, faucet operational via minter role
+
+**Integration:**
+- `cogni-proposal-launcher` creates deeplink for minter role proposal
 
 ## Testing
 ```bash

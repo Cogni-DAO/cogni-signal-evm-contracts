@@ -16,6 +16,7 @@ import {MajorityVotingBase} from "token-voting-plugin/src/base/MajorityVotingBas
 import {TokenVotingSetup} from "token-voting-plugin/src/TokenVotingSetup.sol";
 import {TokenVoting} from "token-voting-plugin/src/TokenVoting.sol";
 import {GovernanceERC20} from "token-voting-plugin/src/erc20/GovernanceERC20.sol";
+import {NonTransferableVotes} from "../../../src/NonTransferableVotes.sol";
 import {IPlugin} from "@aragon/osx-commons-contracts/src/plugin/IPlugin.sol";
 
 /**
@@ -130,16 +131,28 @@ contract AragonOSxProvider is IGovProvider, Script {
         votingSettings.minDuration = uint64(3600);
         votingSettings.minProposerVotingPower = uint256(1e18);
 
+        // Deploy custom non-transferable governance token
+        NonTransferableVotes customToken = new NonTransferableVotes(
+            config.tokenName,
+            config.tokenSymbol
+        );
+        
+        // Mint initial supply to holder
+        customToken.mint(config.tokenInitialHolder, amounts[0]);
+
         TokenVotingSetup.TokenSettings memory tokenSettings = TokenVotingSetup.TokenSettings({
-            addr: address(0),
+            addr: address(customToken),
             name: config.tokenName,
             symbol: config.tokenSymbol
         });
 
+        // Avoid plugin-side mint to prevent double-mint
+        address[] memory emptyReceivers;
+        uint256[] memory emptyAmounts;
         GovernanceERC20.MintSettings memory mintSettings = GovernanceERC20.MintSettings({
-            receivers: receivers,
-            amounts: amounts,
-            ensureDelegationOnMint: true
+            receivers: emptyReceivers,
+            amounts: emptyAmounts,
+            ensureDelegationOnMint: false
         });
 
         // Add the 4 missing parameters that TokenVotingSetup expects (7 total)
@@ -191,6 +204,9 @@ contract AragonOSxProvider is IGovProvider, Script {
         // Ask plugin for its governance token instead of placeholder
         governanceToken = address(TokenVoting(tokenVotingPlugin).getVotingToken());
         require(governanceToken != address(0) && governanceToken.code.length > 0, "bad token");
+        
+        // Hand control to the DAO
+        customToken.transferOwnership(dao);
     }
     
     

@@ -65,3 +65,20 @@ signal("gitlab", "https://gitlab.com/owner/repo", "grant", "collaborator", "alic
 - **Fork networks** - `vm.createSelectFork(vm.envString("RPC_URL"))`
 - **Test complete workflows** - End-to-end user journeys
 - **Validate full events** - Still use `vm.expectEmit(true, true, true, true)`
+
+## FaucetMinter.e2e.t.sol
+
+4 E2E tests using Sepolia fork with simplified mock contracts (following CogniSignal pattern).
+
+**Setup:** 
+- Forks real network with hardcoded DAO address `0xa38d03Ea38c45C1B6a37472d8Df78a47C1A31EB5`
+- Deploys simple `MockGovernanceToken` with basic permission system
+- Deploys FaucetMinter and grants mock permissions
+
+**Tests:**
+- `test_E2E_FirstClaimMints` - User can claim tokens successfully
+- `test_E2E_SecondClaimReverts` - Duplicate claims properly blocked
+- `test_E2E_RevokePermissionHaltsClaims` - Revoking mint permission stops new claims
+- `test_E2E_PauseFunctionality` - Unauthorized pause attempts fail, normal claims work
+
+**Pattern:** Uses simplified mock contracts to avoid complex DAO deployment while testing on real network fork.
