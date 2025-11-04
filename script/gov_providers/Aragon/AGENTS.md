@@ -20,7 +20,7 @@ Decodes and validates addresses have deployed code.
 Returns `GovDeploymentResult`:
 - `daoAddress`: Aragon DAO contract
 - `votingPluginAddress`: TokenVoting plugin  
-- `tokenAddress`: Governance token (created by plugin)
+- `tokenAddress`: Custom NonTransferableVotes token (deployed first, ownership transferred to DAO)
 - `providerType`: "aragon-osx"
 
 ## Voting Settings
@@ -31,17 +31,22 @@ Returns `GovDeploymentResult`:
 - **Min Duration**: 3600 seconds
 - **Min Proposer Voting Power**: 1 token
 
-Initial holder receives 1 governance token.
+Initial holder receives 1 NonTransferableVotes token.
 
 ## Implementation
 
-Uses official Aragon imports:
+**Custom Token Deployment:**
+1. Deploy NonTransferableVotes with deployer as temporary owner
+2. Mint initial supply to configured holder
+3. Create DAO using custom token address in TokenSettings
+4. Transfer token ownership to DAO
+
+Uses official Aragon imports plus custom token:
 - `@aragon/osx/framework/dao/DAOFactory.sol`
 - `token-voting-plugin/src/TokenVoting.sol`  
-- `token-voting-plugin/src/base/MajorityVotingBase.sol`
-- `token-voting-plugin/src/erc20/GovernanceERC20.sol`
+- `../../../src/NonTransferableVotes.sol`
 
-Deployment via `DAOFactory.createDao()` with `InstalledPlugin[]` dynamic array return.
+Deployment via `DAOFactory.createDao()` with empty MintSettings to prevent double-minting.
 
 ## ABI Compatibility
 
