@@ -116,7 +116,7 @@ function test_RevertWhen_InvalidInput() public {
 
 **Access Control Tests:**
 - DAO can pause/unpause faucet
-- DAO can update configuration (amount per claim, global cap)
+- DAO can update global cap configuration
 - Non-DAO addresses cannot access restricted functions
 
 **Reentrancy Protection:**
@@ -129,5 +129,5 @@ function test_RevertWhen_InvalidInput() public {
 - Permission ID constants match expected values
 
 ### Mock Contracts
-- `MockDAO`: Simulates Aragon DAO permission system
-- `MockToken`: Simulates GovernanceERC20 with mint functionality and permissions
+- `MockDAO`: Simulates Aragon DAO permission system for faucet authorization
+- `MockToken`: Simulates NonTransferableVotes with `grantMintRole()` and fixed 1e18 minting

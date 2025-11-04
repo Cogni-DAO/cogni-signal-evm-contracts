@@ -77,13 +77,13 @@ Token faucet enabling one-time governance token claims with DAO-controlled confi
 
 ### Core Functions
 ```solidity
-function claim() external nonReentrant;              // Mint tokens to msg.sender
+function claim() external nonReentrant;              // Mint 1e18 tokens to msg.sender
 function pause(bool _paused) external auth(PAUSE_PERMISSION);  // DAO pause control
-function setAmountPerClaim(uint256) external auth(CONFIG_PERMISSION);
-function setGlobalCap(uint256) external auth(CONFIG_PERMISSION);
+function setGlobalCap(uint256) external auth(CONFIG_PERMISSION); // Update total cap
 ```
 
 ### Token Integration
-- Calls `token.mint(msg.sender, amountPerClaim)` on claim
-- Requires minter role on NonTransferableVotes token
-- DAO grants minter role via: `token.grantMintRole(faucetAddress)`
+- Uses `IERC20` interface for token reads and `IMint` interface for minting
+- Fixed amount: mints exactly 1e18 tokens per claim (matches token constraint)
+- Requires minter role: faucet must be granted `minters[faucet] = true`
+- DAO grants via proposal: `token.grantMintRole(faucetAddress)`

@@ -11,9 +11,8 @@ contract NonTransferableVotes is ERC20, ERC20Votes, Ownable {
 
     constructor(string memory n, string memory s)
         ERC20(n, s)
-        ERC20Permit(n)   // v4 needs name here
-        Ownable()        // v4: owner = msg.sender
-    {}
+        ERC20Permit(n)   // v4: name here
+    {} 
 
     // block nonzero→nonzero transfers; allow mint (from=0) and burn (to=0)
     function _beforeTokenTransfer(address from, address to, uint256 amount)

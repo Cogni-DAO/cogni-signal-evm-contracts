@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {Deploy} from "./Deploy.s.sol";
 import {CogniSignal} from "../src/CogniSignal.sol";
 import {FaucetMinter} from "../src/FaucetMinter.sol";
 import {IGovProvider} from "./gov_providers/IGovProvider.sol";

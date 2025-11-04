@@ -4,7 +4,11 @@ pragma solidity ^0.8.13;
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {DaoAuthorizable} from "@aragon/osx-commons-contracts/src/permission/auth/DaoAuthorizable.sol";
 import {IDAO} from "@aragon/osx-commons-contracts/src/dao/IDAO.sol";
-import {GovernanceERC20} from "token-voting-plugin/src/erc20/GovernanceERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+interface IMint { 
+    function mint(address to, uint256 amount) external; 
+}
 
 /**
  * @title FaucetMinter
@@ -12,14 +16,17 @@ import {GovernanceERC20} from "token-voting-plugin/src/erc20/GovernanceERC20.sol
  * @notice Mints governance tokens to users who haven't claimed before
  */
 contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
-    /// @notice The governance token to mint
-    GovernanceERC20 public immutable token;
+    /// @notice The governance token (for reads)
+    IERC20 public immutable token;
+    /// @notice The token minter interface
+    IMint private immutable minter;
     
     /// @notice Permission ID constants
     bytes32 public constant PAUSE_PERMISSION_ID = keccak256("PAUSE_PERMISSION");
     bytes32 public constant CONFIG_PERMISSION_ID = keccak256("CONFIG_PERMISSION");
     
-    /// @notice Amount of tokens to mint per claim
+    /// @notice Amount of tokens to mint per claim (fixed at 1e18)
+    uint256 public constant ONE = 1e18;
     uint256 public amountPerClaim;
     
     /// @notice Maximum total tokens that can ever be minted by this faucet
@@ -65,10 +72,11 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
         uint256 _amountPerClaim,
         uint256 _globalCap
     ) DaoAuthorizable(IDAO(_dao)) {
-        if (_amountPerClaim == 0) revert ZeroAmount();
+        if (_amountPerClaim != ONE) revert ZeroAmount();
         if (_globalCap < _amountPerClaim) revert InvalidCap(_globalCap);
         
-        token = GovernanceERC20(_token);
+        token = IERC20(_token);
+        minter = IMint(_token);
         amountPerClaim = _amountPerClaim;
         globalCap = _globalCap;
         paused = false;
@@ -76,7 +84,7 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     
     /**
      * @notice Claim tokens (one time per address)
-     * @dev Requires MINT_PERMISSION_ID to be granted to this contract by the DAO
+     * @dev Requires faucet to be a minter on the token (DAO grants via proposal)
      */
     function claim() external nonReentrant {
         if (paused) revert FaucetPaused();
@@ -88,7 +96,7 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
         claimed[msg.sender] = true;
         totalMinted += amountPerClaim;
         
-        token.mint(msg.sender, amountPerClaim);
+        minter.mint(msg.sender, ONE); // token enforces 1e18 anyway
         
         emit Claimed(msg.sender, amountPerClaim);
     }
@@ -103,19 +111,7 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
         emit PauseToggled(_paused);
     }
     
-    /**
-     * @notice Update the amount minted per claim
-     * @param _newAmount New amount to mint per claim
-     * @dev Only callable by the DAO
-     */
-    function setAmountPerClaim(uint256 _newAmount) external auth(CONFIG_PERMISSION_ID) {
-        if (_newAmount == 0) revert ZeroAmount();
-        
-        uint256 oldAmount = amountPerClaim;
-        amountPerClaim = _newAmount;
-        
-        emit AmountPerClaimUpdated(oldAmount, _newAmount);
-    }
+    // removed: amountPerClaim is fixed at 1e18 to align with token invariant
     
     /**
      * @notice Update the global cap
@@ -146,13 +142,5 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
      */
     function remainingTokens() external view returns (uint256) {
         return globalCap - totalMinted;
-    }
-    
-    /**
-     * @notice Get the MINT_PERMISSION_ID from the token contract
-     * @return The mint permission ID required for this faucet to work
-     */
-    function getMintPermissionId() external view returns (bytes32) {
-        return token.MINT_PERMISSION_ID();
     }
 }

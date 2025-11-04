@@ -43,14 +43,15 @@ Initial holder receives 1 NonTransferableVotes token.
 
 Uses official Aragon imports plus custom token:
 - `@aragon/osx/framework/dao/DAOFactory.sol`
-- `token-voting-plugin/src/TokenVoting.sol`  
+- `token-voting-plugin/src/TokenVoting.sol`
+- `token-voting-plugin/src/erc20/GovernanceERC20.sol` (for MintSettings structure)
 - `../../../src/NonTransferableVotes.sol`
 
-Deployment via `DAOFactory.createDao()` with empty MintSettings to prevent double-minting.
+Deployment via `DAOFactory.createDao()` with empty `GovernanceERC20.MintSettings` to prevent plugin-side minting.
 
 ## ABI Compatibility
 
-TokenVotingSetup requires 7 parameters (was 3, fixed):
+TokenVotingSetup requires 7 parameters:
 1. VotingSettings  
 2. TokenSettings
 3. MintSettings
@@ -59,7 +60,7 @@ TokenVotingSetup requires 7 parameters (was 3, fixed):
 6. pluginMetadata (bytes)
 7. excludedAccounts (address[])
 
-Fixed 0x20 malformed address decoding by using official imports instead of custom interfaces.
+Official imports provide proper ABI compatibility for address decoding.
 
 
 ## Error Handling
