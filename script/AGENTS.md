@@ -97,8 +97,8 @@ forge script GrantMintToFaucet --rpc-url $EVM_RPC_URL --broadcast
 **Output:** Proposal ID for DAO members to vote on
 
 **Permissions Proposed:**
-1. `grantMintRole(faucet)` - Grants faucet minter role on NonTransferableVotes
-2. `CONFIG_PERMISSION_ID` on faucet → DAO (enables amountPerClaim/globalCap updates)  
+1. `token.grantMintRole(faucet)` - Grants faucet minter role on NonTransferableVotes
+2. `CONFIG_PERMISSION_ID` on faucet → DAO (enables globalCap updates)  
 3. `PAUSE_PERMISSION_ID` on faucet → DAO (enables pause/unpause)
 
 **Production Flow:** Use governance UI deeplinks with hardcoded proposal parameters instead of this script.

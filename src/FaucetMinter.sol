@@ -84,7 +84,7 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     
     /**
      * @notice Claim tokens (one time per address)
-     * @dev Requires MINT_PERMISSION_ID to be granted to this contract by the DAO
+     * @dev Requires faucet to be a minter on the token (DAO grants via proposal)
      */
     function claim() external nonReentrant {
         if (paused) revert FaucetPaused();
