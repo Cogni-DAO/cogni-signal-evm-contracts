@@ -12,8 +12,8 @@ interface IMint {
 
 /**
  * @title FaucetMinter
- * @dev Token faucet for one-time token claims with DAO-controlled pause functionality
- * @notice Mints governance tokens to users who haven't claimed before
+ * @dev DAO-controlled membership via join requests and batch approvals
+ * @notice Users request to join, DAO approves via proposal execution
  */
 contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     /// @notice The governance token (for reads)
@@ -24,6 +24,7 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     /// @notice Permission ID constants
     bytes32 public constant PAUSE_PERMISSION_ID = keccak256("PAUSE_PERMISSION");
     bytes32 public constant CONFIG_PERMISSION_ID = keccak256("CONFIG_PERMISSION");
+    bytes32 public constant APPROVE_PERMISSION_ID = keccak256("APPROVE_PERMISSION");
     
     /// @notice Amount of tokens to mint per claim (fixed at 1e18)
     uint256 public constant ONE = 1e18;
@@ -38,11 +39,17 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     /// @notice Whether the faucet is paused
     bool public paused;
     
-    /// @notice Tracks addresses that have already claimed
-    mapping(address => bool) public claimed;
+    /// @notice Tracks addresses that have requested to join
+    mapping(address => bool) public requested;
     
-    /// @notice Emitted when tokens are claimed
-    event Claimed(address indexed claimer, uint256 amount);
+    /// @notice Emitted when user requests to join
+    event Requested(address indexed user);
+    
+    /// @notice Emitted when user is approved
+    event Approved(address indexed user);
+    
+    /// @notice Emitted when user is rejected
+    event Rejected(address indexed user);
     
     /// @notice Emitted when the faucet is paused/unpaused
     event PauseToggled(bool paused);
@@ -54,7 +61,7 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     event GlobalCapUpdated(uint256 oldCap, uint256 newCap);
     
     /// @notice Custom errors for better revert messages
-    error AlreadyClaimed(address claimer);
+    error AlreadyRequested(address user);
     error FaucetPaused();
     error GlobalCapExceeded(uint256 requested, uint256 available);
     error ZeroAmount();
@@ -83,22 +90,64 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     }
     
     /**
-     * @notice Claim tokens (one time per address)
-     * @dev Requires faucet to be a minter on the token (DAO grants via proposal)
+     * @notice Request to join the DAO
+     * @dev Anyone can request, DAO votes to approve
      */
-    function claim() external nonReentrant {
+    function requestJoin() external {
+        if (requested[msg.sender]) revert AlreadyRequested(msg.sender);
+        
+        requested[msg.sender] = true;
+        emit Requested(msg.sender);
+    }
+    
+    /**
+     * @notice DAO approves join requests and mints tokens
+     * @param users Array of addresses to approve
+     * @dev Only DAO can call via proposal execution
+     */
+    function approve(address[] calldata users) external nonReentrant auth(APPROVE_PERMISSION_ID) {
         if (paused) revert FaucetPaused();
-        if (claimed[msg.sender]) revert AlreadyClaimed(msg.sender);
-        if (totalMinted + amountPerClaim > globalCap) {
-            revert GlobalCapExceeded(amountPerClaim, globalCap - totalMinted);
+        
+        uint256 n = users.length;
+        for (uint256 i; i < n; ) {
+            address user = users[i];
+            
+            if (requested[user]) {
+                if (token.balanceOf(user) == 0) {
+                    if (totalMinted + ONE > globalCap) {
+                        revert GlobalCapExceeded(ONE, globalCap - totalMinted);
+                    }
+                    
+                    requested[user] = false;
+                    totalMinted += ONE;
+                    minter.mint(user, ONE);
+                    emit Approved(user);
+                } else {
+                    requested[user] = false; // Clear stale request for existing holders
+                }
+            }
+            
+            unchecked { ++i; }
         }
-        
-        claimed[msg.sender] = true;
-        totalMinted += amountPerClaim;
-        
-        minter.mint(msg.sender, ONE); // token enforces 1e18 anyway
-        
-        emit Claimed(msg.sender, amountPerClaim);
+    }
+    
+    /**
+     * @notice DAO rejects join requests
+     * @param users Array of addresses to reject
+     * @dev Only DAO can call via proposal execution
+     */
+    function reject(address[] calldata users) external auth(APPROVE_PERMISSION_ID) {
+        uint256 n = users.length;
+        for (uint256 i; i < n; ) {
+            address user = users[i];
+            
+            if (requested[user]) {
+                requested[user] = false;
+                emit Rejected(user);
+            }
+            
+            unchecked { ++i; }
+        }
     }
     
     /**
@@ -128,12 +177,12 @@ contract FaucetMinter is ReentrancyGuard, DaoAuthorizable {
     }
     
     /**
-     * @notice Check if an address has claimed tokens
-     * @param claimer Address to check
-     * @return Whether the address has already claimed
+     * @notice Check if an address has requested to join
+     * @param user Address to check
+     * @return Whether the address has requested to join
      */
-    function hasClaimed(address claimer) external view returns (bool) {
-        return claimed[claimer];
+    function requestedOf(address user) external view returns (bool) {
+        return requested[user];
     }
     
     /**

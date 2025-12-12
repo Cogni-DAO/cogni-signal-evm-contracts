@@ -83,7 +83,8 @@ contract GrantMintToFaucet is Script {
             "**Actions:**\\n",
             "- Grant minter role to faucet\\n",
             "- Grant CONFIG_PERMISSION to DAO\\n", 
-            "- Grant PAUSE_PERMISSION to DAO"
+            "- Grant PAUSE_PERMISSION to DAO\\n",
+            "- Grant APPROVE_PERMISSION to DAO"
         ));
         
         // Create proposal  

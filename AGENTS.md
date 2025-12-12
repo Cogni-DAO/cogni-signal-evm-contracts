@@ -86,15 +86,20 @@ See `README.md` for detailed setup instructions.
 
 ## Token Faucet
 
-**FaucetMinter.sol** - Anyone claims exactly 1 governance token, once per wallet.
+**FaucetMinter.sol** - DAO-controlled membership via join requests and batch approvals.
 
 **Setup Flow:**
 1. Deploy faucet (unauthorized initially)
-2. Create DAO proposal: `token.grantMintRole(faucet)`  
-3. After approval, faucet operational via minter role
+2. Create DAO proposal: `token.grantMintRole(faucet)` + grant APPROVE_PERMISSION
+3. After approval, faucet operational for join-request workflow
+
+**Join Workflow:**
+1. Users call `requestJoin()` to request membership
+2. DAO creates proposal with `approve([addresses])`  
+3. Proposal execution mints exactly 1e18 tokens to approved requesters
 
 **Integration:**
-- `cogni-proposal-launcher` creates deeplink for minter role proposal
+- `cogni-proposal-launcher` creates deeplink for permission proposals
 
 ## Testing
 ```bash

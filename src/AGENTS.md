@@ -67,23 +67,30 @@ require(balanceOf(to) == 0, "Address already has 1");         // One-and-done
 
 ## FaucetMinter.sol
 
-Token faucet enabling one-time governance token claims with DAO-controlled configuration.
+DAO-controlled membership via join requests and batch approvals.
 
 ### Key Features
-- **One-Time Claims**: `mapping(address => bool) claimed` prevents duplicate claims
-- **DAO Control**: `DaoAuthorizable` enables DAO-only pause and configuration
+- **Join Requests**: `mapping(address => bool) requested` tracks membership requests
+- **DAO Approval**: Batch approval/rejection via DAO proposal execution
 - **Reentrancy Protection**: `ReentrancyGuard` prevents reentrancy attacks
 - **Global Cap**: Limits total tokens that can be minted
 
 ### Core Functions
 ```solidity
-function claim() external nonReentrant;              // Mint 1e18 tokens to msg.sender
+function requestJoin() external;                     // Request DAO membership
+function approve(address[]) external auth(APPROVE_PERMISSION); // DAO approves requests
+function reject(address[]) external auth(APPROVE_PERMISSION);  // DAO rejects requests
 function pause(bool _paused) external auth(PAUSE_PERMISSION);  // DAO pause control
-function setGlobalCap(uint256) external auth(CONFIG_PERMISSION); // Update total cap
 ```
+
+### Join Workflow
+1. Users call `requestJoin()` to request membership
+2. DAO creates proposal with `approve([addresses])` 
+3. Proposal execution mints exactly 1e18 tokens to approved requesters
+4. OSx permission grantee is the DAO core (IDAO). Proposals execute as the DAO.
 
 ### Token Integration
 - Uses `IERC20` interface for token reads and `IMint` interface for minting
-- Fixed amount: mints exactly 1e18 tokens per claim (matches token constraint)
+- Fixed amount: mints exactly 1e18 tokens per approval (matches token constraint)
 - Requires minter role: faucet must be granted `minters[faucet] = true`
 - DAO grants via proposal: `token.grantMintRole(faucetAddress)`
