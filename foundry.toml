@@ -18,10 +18,12 @@ fs_permissions = [{ access = "read-write", path = "./" }]
 
 [rpc_endpoints]
 sepolia = "${EVM_RPC_URL}"                 # HTTPS RPC for Sepolia
-arbitrum_sepolia = "${ARBITRUM_RPC_URL}" # optional
+base = "${EVM_RPC_URL}"                    # HTTPS RPC for Base
+arbitrum_sepolia = "${ARBITRUM_RPC_URL}"   # optional
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+base = { key = "${ETHERSCAN_API_KEY}" }
 arbitrum_sepolia = { key = "${ARBISCAN_API_KEY}" } # optional
 
 [profile.default.env]

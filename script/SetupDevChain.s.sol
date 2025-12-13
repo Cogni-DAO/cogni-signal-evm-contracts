@@ -11,11 +11,12 @@ import {GovProviderFactory} from "./gov_providers/GovProviderFactory.sol";
 /**
  * @title Development Chain Setup Script
  * @dev Deploys complete development stack: ERC20 → DAO → CogniSignal
- * 
+ *
  * Required Environment Variables:
- * - WALLET_PRIVATE_KEY: Private key for funded Sepolia wallet
- * - EVM_RPC_URL: Sepolia RPC endpoint
- * 
+ * - WALLET_PRIVATE_KEY: Private key for funded wallet
+ * - EVM_RPC_URL: RPC endpoint for target network
+ * - CHAIN_ID: Target network chain ID (e.g., 8453 for Base, 11155111 for Sepolia)
+ *
  * Optional:
  * - GOV_PROVIDER: Governance provider ("aragon-osx", "simple") - defaults to "aragon-osx"
  * - TOKEN_NAME: ERC20 token name (default: "Cogni Governance Token")
@@ -59,7 +60,7 @@ contract SetupDevChain is Script {
         
         // Check deployer balance on real chain
         uint256 balance = deployer.balance;
-        require(balance >= 0.01 ether, "Insufficient ETH balance for deployment");
+        require(balance >= 0.00001 ether, "Insufficient ETH balance for deployment");
         
         vm.startBroadcast(deployerPrivateKey);
         
@@ -229,23 +230,43 @@ contract SetupDevChain is Script {
     }
     
     function _getAragonDAOFactory() internal view returns (address) {
-        if (block.chainid == 11155111) { // Sepolia
-            return 0xB815791c233807D39b7430127975244B36C19C8e;
-        }
-        revert("Unsupported network for Aragon");
+        return _getAragonAddress("DAOFactory");
     }
-    
+
     function _getAragonPSP() internal view returns (address) {
-        if (block.chainid == 11155111) { // Sepolia
-            return 0xC24188a73dc09aA7C721f96Ad8857B469C01dC9f;
-        }
-        revert("Unsupported network for Aragon");
+        return _getAragonAddress("PluginSetupProcessor");
     }
-    
+
     function _getAragonTokenVotingRepo() internal view returns (address) {
-        if (block.chainid == 11155111) { // Sepolia
-            return 0x424F4cA6FA9c24C03f2396DF0E96057eD11CF7dF;
+        return _getAragonAddress("TokenVotingRepo");
+    }
+
+    function _getAragonAddress(string memory component) internal view returns (address addr) {
+        uint256 chainId = block.chainid;
+        bytes32 componentHash = keccak256(bytes(component));
+
+        // Sepolia (11155111)
+        if (chainId == 11155111) {
+            if (componentHash == keccak256("DAOFactory")) addr = 0xB815791c233807D39b7430127975244B36C19C8e;
+            else if (componentHash == keccak256("PluginSetupProcessor")) addr = 0xC24188a73dc09aA7C721f96Ad8857B469C01dC9f;
+            else if (componentHash == keccak256("TokenVotingRepo")) addr = 0x424F4cA6FA9c24C03f2396DF0E96057eD11CF7dF;
         }
-        revert("Unsupported network for Aragon");
+        // Base Mainnet (8453)
+        else if (chainId == 8453) {
+            if (componentHash == keccak256("DAOFactory")) addr = 0xcc602EA573a42eBeC290f33F49D4A87177ebB8d2;
+            else if (componentHash == keccak256("PluginSetupProcessor")) addr = 0x91a851E9Ed7F2c6d41b15F76e4a88f5A37067cC9;
+            else if (componentHash == keccak256("TokenVotingRepo")) addr = 0x2532570DcFb749A7F976136CC05648ef2a0f60b0;
+        }
+        // Base Sepolia (84532)
+        else if (chainId == 84532) {
+            if (componentHash == keccak256("DAOFactory")) addr = 0x016CBa9bd729C30b16849b2c52744447767E9dab;
+            else if (componentHash == keccak256("PluginSetupProcessor")) addr = 0xd97D409Ca645b108468c26d8506f3a4Bf9D0BE81;
+            else if (componentHash == keccak256("TokenVotingRepo")) addr = 0xdEbcF8779495a62156c6d1416628F60525984e9d;
+        }
+
+        require(addr != address(0), string.concat("Aragon OSx ", component, " not available on this network"));
+
+        // Preflight: verify contract code exists
+        require(addr.code.length > 0, string.concat("No code at Aragon ", component, " address"));
     }
 }

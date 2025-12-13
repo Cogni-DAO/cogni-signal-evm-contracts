@@ -82,10 +82,11 @@ contract AragonOSxProvider is IGovProvider, Script {
     }
     
     function isAvailable() public view override returns (bool) {
-        // Check if we support this chain ID
-        if (block.chainid == 11155111) { // Sepolia
-            return true;
-        }
+        uint256 chainId = block.chainid;
+        // Check if Aragon OSx is deployed on this network
+        if (chainId == 11155111) return true; // Sepolia
+        if (chainId == 8453) return true;     // Base Mainnet
+        if (chainId == 84532) return true;    // Base Sepolia
         return false;
     }
     
